@@ -267,7 +267,7 @@ function renderVariacoesSelector() {
   const container = document.getElementById('variacoesTiposSelector')
   if (!container) return
   container.innerHTML = tiposVariacao.map(t => `
-    <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;background:var(--white);padding:6px 12px;border-radius:100px;border:1px solid var(--gray-light)">
+    <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;background:var(--white);padding:6px 12px;border-radius:100px;border:1.5px solid var(--gray-light);color:var(--dark)">
       <input type="checkbox" onchange="toggleTipoVariacao('${t.id}', this.checked)" ${pecaVariacoes[t.id] ? 'checked' : ''} />
       ${t.nome}
     </label>
@@ -288,7 +288,10 @@ function renderVariacoesAtivas() {
     const t = tiposVariacao.find(x => x.id === tipo_id)
     if (!t) return ''
     
-    const presetsHTML = (t.presets || []).map(p => `<span style="font-size:11px;background:#eee;padding:4px 8px;border-radius:4px;cursor:pointer" onclick="addVariacaoValor('${t.id}', '${p.replace(/'/g,"\\'")}')">+ ${p}</span>`).join(' ')
+    const presetsHTML = (t.presets || []).map(p => `
+      <span style="font-size:11px;background:var(--gray-light);color:var(--dark);padding:4px 10px;border-radius:6px;cursor:pointer;border:1px solid var(--gray-light);transition:var(--transition);" 
+            onclick="addVariacaoValor('${t.id}', '${p.replace(/'/g,"\\'")}')">+ ${p}</span>
+    `).join(' ')
     const activeHTML = vals.map((v, i) => `
       <div style="display:flex;align-items:center;justify-content:space-between;background:var(--bg);padding:8px 12px;border-radius:6px;border:1px solid var(--gray-light);margin-bottom:6px;">
         <span style="font-weight:500;font-size:13px;text-decoration:${v.disponivel?'none':'line-through'};color:${v.disponivel?'var(--dark)':'var(--red)'}">${v.valor}</span>
@@ -299,11 +302,12 @@ function renderVariacoesAtivas() {
       </div>`).join('')
 
     return `
-      <div style="border:1px solid var(--gray-light);border-radius:8px;padding:16px;">
-        <h4 style="margin-top:0;margin-bottom:12px;font-size:14px;">${t.nome}</h4>
+      <div style="border:1px solid var(--gray-light);border-radius:8px;padding:16px;background:var(--white);">
+        <h4 style="margin-top:0;margin-bottom:12px;font-size:14px;color:var(--dark);">${t.nome}</h4>
         <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">${presetsHTML}</div>
         <div style="display:flex;gap:8px;margin-bottom:12px;">
-          <input type="text" id="customVar_${t.id}" placeholder="Valor customizado" style="padding:6px;border:1px solid #ccc;border-radius:4px;flex:1"/>
+          <input type="text" id="customVar_${t.id}" placeholder="Valor customizado" 
+                 style="padding:8px 12px;border:1.5px solid var(--gray-light);border-radius:6px;flex:1;background:var(--bg);color:var(--dark)"/>
           <button type="button" class="btn-secondary" style="padding:6px 16px;" onclick="addVariacaoValorCustom('${t.id}')">Adicionar</button>
         </div>
         <div>${activeHTML}</div>
