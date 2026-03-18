@@ -187,8 +187,8 @@ function cardHTML(peca) {
   const esgotada   = peca.estoque != null && peca.estoque === 0
   const poucasUn   = peca.estoque != null && peca.estoque > 0 && peca.estoque <= 3
 
-  const fotosThumbs = [peca.foto_path, peca.foto_2, peca.foto_3, peca.foto_4].filter(Boolean).map(p => urlThumb(p))
-  const fotoAtual   = fotosThumbs[0] || 'https://placehold.co/400x400/e8e8e4/888?text=Foto'
+  const fotos = [peca.foto_path, peca.foto_2, peca.foto_3, peca.foto_4].filter(Boolean).map(p => fotoPublica(p))
+  const fotoAtual = fotos[0] || 'https://placehold.co/400x400/e8e8e4/888?text=Foto'
 
   const varsPeca = todasVariacoes.filter(v => v.peca_id === peca.id)
   const temVariaveis = varsPeca.length > 0
@@ -213,7 +213,7 @@ function cardHTML(peca) {
   }
 
   return `
-    <article class="product-card" data-id="${peca.id}" data-foto-idx="0" data-fotos='${JSON.stringify(fotosThumbs)}'>
+    <article class="product-card" data-id="${peca.id}" data-foto-idx="0" data-fotos='${JSON.stringify(fotos)}'>
       <div class="card-img-wrap" onclick="abrirModal('${peca.id}')">
         <img id="card-img-${peca.id}" src="${fotoAtual}" alt="${peca.nome}" loading="lazy" onerror="this.src='https://placehold.co/400x400/e8e8e4/888?text=Foto'" />
         ${carouselBtns}
@@ -258,8 +258,8 @@ function abrirModal(id) {
 
   modalAtivoSelecoes = {}
   
-  const fotosFull = [peca.foto_path, peca.foto_2, peca.foto_3, peca.foto_4].filter(Boolean).map(p => urlFull(p))
-  if (!fotosFull.length) fotosFull.push('https://placehold.co/600x600/e8e8e4/888?text=Foto')
+  const fotos = [peca.foto_path, peca.foto_2, peca.foto_3, peca.foto_4].filter(Boolean).map(p => fotoPublica(p))
+  if (!fotos.length) fotos.push('https://placehold.co/600x600/e8e8e4/888?text=Foto')
 
   const esgotada   = peca.estoque != null && peca.estoque === 0
   const catObj     = todasCategorias.find(c => c.id === peca.categoria)
@@ -293,8 +293,8 @@ function abrirModal(id) {
     }).join('')
   }
 
-  const thumbsHTML = fotosFull.length > 1
-    ? fotosFull.map((f,i) => `<img class="modal-thumb ${i===0?'active':''}" src="${f}" data-i="${i}" onclick="trocarFotoModal(${i})" />`).join('')
+  const thumbsHTML = fotos.length > 1
+    ? fotos.map((f,i) => `<img class="modal-thumb ${i===0?'active':''}" src="${f}" data-i="${i}" onclick="trocarFotoModal(${i})" />`).join('')
     : ''
 
   const navHTML = fotos.length > 1
@@ -305,7 +305,7 @@ function abrirModal(id) {
        <div class="modal-thumbs">${thumbsHTML}</div>`
     : ''
 
-  const imagensHTML = fotosFull.map(f => `<img src="${f}" alt="${peca.nome}" loading="lazy" />`).join('')
+  const imagensHTML = fotos.map(f => `<img src="${f}" alt="${peca.nome}" loading="lazy" />`).join('')
 
   const overlay = document.createElement('div')
   overlay.className = 'modal-overlay'
@@ -337,7 +337,7 @@ function abrirModal(id) {
     </div>`
 
   // Navegação interna do modal
-  overlay._fotos  = fotosFull
+  overlay._fotos  = fotos
   overlay._fotoIdx = 0
 
   overlay.addEventListener('click', e => { if (e.target === overlay) fecharModal() })
@@ -495,7 +495,7 @@ function renderCarrinho() {
 
   cartItemsEl.innerHTML = carrinho.map(peca => `
     <div class="cart-item">
-      <img class="cart-item-img" src="${urlThumb(peca.foto_path)}" alt="${peca.nome}"
+      <img class="cart-item-img" src="${fotoPublica(peca.foto_path)}" alt="${peca.nome}"
         onerror="this.src='https://placehold.co/64x64/e8e8e4/888?text=?'" />
       <div class="cart-item-info">
         <div class="cart-item-name">${peca.nome}</div>
@@ -587,26 +587,11 @@ function registrarEvento(pecaId, acao) {
 }
 
 // ── Helpers ───────────────────────────────────────────────────
-function urlThumb(path) {
-  return fotoPublica(path, true)
-}
-
-function urlFull(path) {
-  return fotoPublica(path, false)
-}
-
-function fotoPublica(path, thumb = false) {
+function fotoPublica(path) {
   if (!path) return 'https://placehold.co/400x400/e8e8e4/888?text=Foto'
   if (path.startsWith('http')) return path
   const { data } = db.storage.from(STORAGE_BUCKET).getPublicUrl(path)
-  let url = data.publicUrl
-
-  if (thumb && url.includes('/storage/v1/object/public/')) {
-    url = url.replace('/object/public/', '/render/image/public/')
-    url += '?width=400&quality=75'
-  }
-
-  return url
+  return data.publicUrl
 }
 
 function formatarPreco(valor) {
