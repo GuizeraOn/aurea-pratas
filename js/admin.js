@@ -18,6 +18,43 @@ const saveBtnText   = document.getElementById('saveBtnText')
 const saveSpinner   = document.getElementById('saveSpinner')
 const cancelEditBtn = document.getElementById('cancelEditBtn')
 
+// ── Autenticação simples ──────────────────────────────────────
+const SENHA_HASH = '2669aa90' 
+
+function verificarSenha() {
+  const digitada = document.getElementById('loginSenha').value
+  const hashDigitada = simpleHash(digitada)
+
+  if (hashDigitada === SENHA_HASH) {
+    sessionStorage.setItem('admin_auth', SENHA_HASH)
+    carregarTudo()
+  } else {
+    document.getElementById('loginErro').style.display = 'block'
+    document.getElementById('loginSenha').value = ''
+    document.getElementById('loginSenha').focus()
+  }
+}
+
+function simpleHash(str) {
+  let hash = 0
+  for (let i = 0; i < str.length; i++) {
+    const char = str.charCodeAt(i)
+    hash = ((hash << 5) - hash) + char
+    hash = hash & hash
+  }
+  return Math.abs(hash).toString(16)
+}
+
+function verificarSessao() {
+  const auth = sessionStorage.getItem('admin_auth')
+  if (auth === SENHA_HASH) {
+    carregarTudo()
+  } else {
+    // Garante que o tema seja carregado mesmo sem login para a tela de login ficar bonita
+    initTheme()
+  }
+}
+
 // ── Tema (Dark Mode Default) ──────────────────────────────────
 function initTheme() {
   const saved = localStorage.getItem('admin-theme')
@@ -46,15 +83,21 @@ function toggleTheme() {
 }
 
 // ── Init ─────────────────────────────────────────────────────
-document.addEventListener('DOMContentLoaded', async () => {
+document.addEventListener('DOMContentLoaded', () => {
+  verificarSessao()
+  document.getElementById('themeToggle').addEventListener('click', toggleTheme)
+})
+
+async function carregarTudo() {
   initTheme()
   configurarSlots()
   await carregarCategoriasETipos()
   carregarPecasAdmin()
   carregarRelatorio(7)
-
-  document.getElementById('themeToggle').addEventListener('click', toggleTheme)
-})
+  
+  document.getElementById('loginScreen').style.display = 'none'
+  document.getElementById('adminPanel').style.display = 'block'
+}
 
 // ── Slots de foto ─────────────────────────────────────────────
 function configurarSlots() {

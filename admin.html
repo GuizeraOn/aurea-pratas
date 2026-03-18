@@ -11,198 +11,212 @@
   <link rel="apple-touch-icon" sizes="180x180" href="assets/favicon/apple-touch-icon.png" />
   <meta name="apple-mobile-web-app-title" content="Aurea Pratas" />
   <link rel="manifest" href="assets/favicon/site.webmanifest" />
-</head>
-<body class="admin-body">
+</head><body class="admin-body">
 
-  <nav class="admin-nav">
-    <div class="admin-nav-logo">
-      <img id="adminLogo" src="assets/logo-white.png" alt="Aurea Pratas" class="admin-logo-img">
-      <span>Painel</span>
+  <!-- Tela de Login -->
+  <div id="loginScreen" class="login-screen">
+    <div class="login-box">
+      <img src="assets/logo-dark.png" alt="Aurea Pratas" style="height:48px;margin-bottom:24px" />
+      <h2 style="font-family:var(--font-display);font-weight:400;margin-bottom:24px">Painel Administrativo</h2>
+      <input type="password" id="loginSenha" placeholder="Digite a senha" 
+             onkeydown="if(event.key==='Enter') verificarSenha()" />
+      <button onclick="verificarSenha()">Entrar</button>
+      <p id="loginErro" style="color:var(--red);font-size:13px;margin-top:12px;display:none">
+        Senha incorreta.
+      </p>
     </div>
-    <div class="admin-nav-right">
-      <button id="themeToggle" class="theme-toggle-btn" title="Alternar tema">🌙</button>
-      <a class="admin-nav-link" href="index.html" target="_blank">Ver catálogo →</a>
-    </div>
-  </nav>
+  </div>
 
-  <main class="admin-main">
+  <div id="adminPanel" style="display:none">
+    <nav class="admin-nav">
+      <div class="admin-nav-logo">
+        <img id="adminLogo" src="assets/logo-white.png" alt="Aurea Pratas" class="admin-logo-img">
+        <span>Painel</span>
+      </div>
+      <div class="admin-nav-right">
+        <button id="themeToggle" class="theme-toggle-btn" title="Alternar tema">🌙</button>
+        <a class="admin-nav-link" href="index.html" target="_blank">Ver catálogo →</a>
+      </div>
+    </nav>
 
-    <h1 class="admin-title">Painel de Gestão</h1>
-    <p class="admin-subtitle">Cadastre, edite e controle todas as suas peças.</p>
+    <main class="admin-main">
 
-    <!-- Stats -->
-    <div class="admin-stats">
-      <div class="stat-card">
-        <div class="stat-label">Total de Peças</div>
-        <div class="stat-value" id="statTotal">—</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-label">Visíveis</div>
-        <div class="stat-value gold" id="statVisible">—</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-label">Ocultas</div>
-        <div class="stat-value" id="statHidden">—</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-label">Categorias</div>
-        <div class="stat-value" id="statCats">—</div>
-      </div>
-    </div>
+      <h1 class="admin-title">Painel de Gestão</h1>
+      <p class="admin-subtitle">Cadastre, edite e controle todas as suas peças.</p>
 
-    <!-- Categorias -->
-    <section class="admin-section">
-      <div class="section-title">Categorias</div>
-      <div class="form-row" style="margin-bottom:16px; align-items:flex-end;">
-        <div class="form-group">
-          <label>Nova Categoria</label>
-          <input type="text" id="novaCatNome" placeholder="Ex: Tornozeleiras" />
+      <!-- Stats -->
+      <div class="admin-stats">
+        <div class="stat-card">
+          <div class="stat-label">Total de Peças</div>
+          <div class="stat-value" id="statTotal">—</div>
         </div>
-        <button class="btn-primary" onclick="criarCategoria()" style="height:42px; width:max-content;">Adicionar</button>
-      </div>
-      <div class="admin-table-wrap">
-        <table class="admin-table">
-          <thead><tr><th>Nome</th><th>Slug</th><th>Ações</th></tr></thead>
-          <tbody id="adminCatTable"><tr><td colspan="3">Carregando...</td></tr></tbody>
-        </table>
-      </div>
-    </section>
-
-    <!-- Tipos de Variação -->
-    <section class="admin-section">
-      <div class="section-title">Tipos de Variação</div>
-      <div class="form-row three" style="margin-bottom:16px; align-items:flex-end;">
-        <div class="form-group">
-          <label>Novo Tipo</label>
-          <input type="text" id="novoTipoNome" placeholder="Ex: Tamanho" />
+        <div class="stat-card">
+          <div class="stat-label">Visíveis</div>
+          <div class="stat-value gold" id="statVisible">—</div>
         </div>
-        <div class="form-group">
-          <label>Presets (separados por vírgula)</label>
-          <input type="text" id="novoTipoPresets" placeholder="Ex: P, M, G" />
+        <div class="stat-card">
+          <div class="stat-label">Ocultas</div>
+          <div class="stat-value" id="statHidden">—</div>
         </div>
-        <button class="btn-primary" onclick="criarTipoVariacao()" style="height:42px; width:max-content;">Adicionar</button>
-      </div>
-      <div class="admin-table-wrap">
-        <table class="admin-table">
-          <thead><tr><th>Nome</th><th>Presets</th><th>Ações</th></tr></thead>
-          <tbody id="adminTipoVarTable"><tr><td colspan="3">Carregando...</td></tr></tbody>
-        </table>
-      </div>
-    </section>
-
-    <!-- Formulário -->
-    <section class="admin-section">
-      <div class="section-title" id="formTitle">Cadastrar Nova Peça</div>
-
-      <div class="form-group" style="margin-bottom:20px">
-        <label>Fotos da Peça (até 4 — a primeira é a principal)</label>
-        <div class="photo-grid">
-          <div class="photo-slot" id="slot0"><input type="file" id="photoInput0" accept="image/*" /><div class="slot-placeholder"><span class="upload-icon">📸</span><span class="slot-label">Principal</span></div><img class="slot-preview hidden" id="preview0" alt="" /><button class="slot-remove hidden" id="remove0" type="button" onclick="removerFoto(0)">✕</button></div>
-          <div class="photo-slot" id="slot1"><input type="file" id="photoInput1" accept="image/*" /><div class="slot-placeholder"><span class="upload-icon">📸</span><span class="slot-label">Foto 2</span></div><img class="slot-preview hidden" id="preview1" alt="" /><button class="slot-remove hidden" id="remove1" type="button" onclick="removerFoto(1)">✕</button></div>
-          <div class="photo-slot" id="slot2"><input type="file" id="photoInput2" accept="image/*" /><div class="slot-placeholder"><span class="upload-icon">📸</span><span class="slot-label">Foto 3</span></div><img class="slot-preview hidden" id="preview2" alt="" /><button class="slot-remove hidden" id="remove2" type="button" onclick="removerFoto(2)">✕</button></div>
-          <div class="photo-slot" id="slot3"><input type="file" id="photoInput3" accept="image/*" /><div class="slot-placeholder"><span class="upload-icon">📸</span><span class="slot-label">Foto 4</span></div><img class="slot-preview hidden" id="preview3" alt="" /><button class="slot-remove hidden" id="remove3" type="button" onclick="removerFoto(3)">✕</button></div>
+        <div class="stat-card">
+          <div class="stat-label">Categorias</div>
+          <div class="stat-value" id="statCats">—</div>
         </div>
       </div>
 
-      <div class="form-group" style="margin-bottom:20px">
-        <label>Ou use URLs de Fotos Externas</label>
-        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-top:8px;">
-          <input type="text" id="inputImg" placeholder="URL Foto Principal" style="padding:10px; border:1px solid var(--gray-light); border-radius:6px; width:100%; transition: var(--transition);" />
-          <input type="text" id="inputImg2" placeholder="URL Foto 2" style="padding:10px; border:1px solid var(--gray-light); border-radius:6px; width:100%; transition: var(--transition);" />
-          <input type="text" id="inputImg3" placeholder="URL Foto 3" style="padding:10px; border:1px solid var(--gray-light); border-radius:6px; width:100%; transition: var(--transition);" />
-          <input type="text" id="inputImg4" placeholder="URL Foto 4" style="padding:10px; border:1px solid var(--gray-light); border-radius:6px; width:100%; transition: var(--transition);" />
+      <!-- Categorias -->
+      <section class="admin-section">
+        <div class="section-title">Categorias</div>
+        <div class="form-row" style="margin-bottom:16px; align-items:flex-end;">
+          <div class="form-group">
+            <label>Nova Categoria</label>
+            <input type="text" id="novaCatNome" placeholder="Ex: Tornozeleiras" />
+          </div>
+          <button class="btn-primary" onclick="criarCategoria()" style="height:42px; width:max-content;">Adicionar</button>
         </div>
-      </div>
-
-      <div class="form-row three" style="margin-bottom:16px">
-        <div class="form-group">
-          <label for="inputNome">Nome da Peça *</label>
-          <input type="text" id="inputNome" placeholder="Ex: Anel Lua Crescente" />
+        <div class="admin-table-wrap">
+          <table class="admin-table">
+            <thead><tr><th>Nome</th><th>Slug</th><th>Ações</th></tr></thead>
+            <tbody id="adminCatTable"><tr><td colspan="3">Carregando...</td></tr></tbody>
+          </table>
         </div>
-        <div class="form-group">
-          <label for="inputCategoria">Categoria *</label>
-          <select id="inputCategoria">
-            <option value="">Carregando...</option>
-          </select>
+      </section>
+
+      <!-- Tipos de Variação -->
+      <section class="admin-section">
+        <div class="section-title">Tipos de Variação</div>
+        <div class="form-row three" style="margin-bottom:16px; align-items:flex-end;">
+          <div class="form-group">
+            <label>Novo Tipo</label>
+            <input type="text" id="novoTipoNome" placeholder="Ex: Tamanho" />
+          </div>
+          <div class="form-group">
+            <label>Presets (separados por vírgula)</label>
+            <input type="text" id="novoTipoPresets" placeholder="Ex: P, M, G" />
+          </div>
+          <button class="btn-primary" onclick="criarTipoVariacao()" style="height:42px; width:max-content;">Adicionar</button>
         </div>
-        <div class="form-group">
-          <label for="inputPreco">Preço (R$) *</label>
-          <input type="number" id="inputPreco" placeholder="89.90" step="0.01" min="0" />
+        <div class="admin-table-wrap">
+          <table class="admin-table">
+            <thead><tr><th>Nome</th><th>Presets</th><th>Ações</th></tr></thead>
+            <tbody id="adminTipoVarTable"><tr><td colspan="3">Carregando...</td></tr></tbody>
+          </table>
         </div>
-      </div>
+      </section>
 
-      <div class="form-row" style="margin-bottom:16px">
-        <div class="form-group">
-          <label for="inputEstoque">Estoque (opcional)</label>
-          <input type="number" id="inputEstoque" placeholder="Deixe vazio se não controla" min="0" />
-        </div>
-        <div class="form-group">
-          <label for="inputDesc">Descrição (opcional)</label>
-          <input type="text" id="inputDesc" placeholder="Material, tamanho, acabamento..." />
-        </div>
-      </div>
+      <!-- Formulário -->
+      <section class="admin-section">
+        <div class="section-title" id="formTitle">Cadastrar Nova Peça</div>
 
-      <div class="form-group" style="margin-top:20px; border-top:1px solid var(--gray-light); padding-top:20px; margin-bottom:24px;">
-        <label style="font-size:16px; font-weight:600; color:var(--dark); margin-bottom:4px;">Variações da Peça (Opcional)</label>
-        <p style="font-size:12px; color:var(--gray-mid); margin-bottom:12px;">Ative os tipos de variação (como Tamanho ou Cor) e adicione os valores para esta peça.</p>
-        
-        <div id="variacoesTiposSelector" style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:16px;">
-          <!-- Checkboxes dos Tipos Vêm via JS -->
+        <div class="form-group" style="margin-bottom:20px">
+          <label>Fotos da Peça (até 4 — a primeira é a principal)</label>
+          <div class="photo-grid">
+            <div class="photo-slot" id="slot0"><input type="file" id="photoInput0" accept="image/*" /><div class="slot-placeholder"><span class="upload-icon">📸</span><span class="slot-label">Principal</span></div><img class="slot-preview hidden" id="preview0" alt="" /><button class="slot-remove hidden" id="remove0" type="button" onclick="removerFoto(0)">✕</button></div>
+            <div class="photo-slot" id="slot1"><input type="file" id="photoInput1" accept="image/*" /><div class="slot-placeholder"><span class="upload-icon">📸</span><span class="slot-label">Foto 2</span></div><img class="slot-preview hidden" id="preview1" alt="" /><button class="slot-remove hidden" id="remove1" type="button" onclick="removerFoto(1)">✕</button></div>
+            <div class="photo-slot" id="slot2"><input type="file" id="photoInput2" accept="image/*" /><div class="slot-placeholder"><span class="upload-icon">📸</span><span class="slot-label">Foto 3</span></div><img class="slot-preview hidden" id="preview2" alt="" /><button class="slot-remove hidden" id="remove2" type="button" onclick="removerFoto(2)">✕</button></div>
+            <div class="photo-slot" id="slot3"><input type="file" id="photoInput3" accept="image/*" /><div class="slot-placeholder"><span class="upload-icon">📸</span><span class="slot-label">Foto 4</span></div><img class="slot-preview hidden" id="preview3" alt="" /><button class="slot-remove hidden" id="remove3" type="button" onclick="removerFoto(3)">✕</button></div>
+          </div>
         </div>
 
-        <div id="variacoesAtivasContainer" style="display:flex; flex-direction:column; gap:16px;">
-          <!-- Caixas dos Tipos Ativos Vêm via JS -->
+        <div class="form-group" style="margin-bottom:20px">
+          <label>Ou use URLs de Fotos Externas</label>
+          <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-top:8px;">
+            <input type="text" id="inputImg" placeholder="URL Foto Principal" style="padding:10px; border:1px solid var(--gray-light); border-radius:6px; width:100%; transition: var(--transition);" />
+            <input type="text" id="inputImg2" placeholder="URL Foto 2" style="padding:10px; border:1px solid var(--gray-light); border-radius:6px; width:100%; transition: var(--transition);" />
+            <input type="text" id="inputImg3" placeholder="URL Foto 3" style="padding:10px; border:1px solid var(--gray-light); border-radius:6px; width:100%; transition: var(--transition);" />
+            <input type="text" id="inputImg4" placeholder="URL Foto 4" style="padding:10px; border:1px solid var(--gray-light); border-radius:6px; width:100%; transition: var(--transition);" />
+          </div>
         </div>
-      </div>
 
-      <input type="hidden" id="editingId" value="" />
+        <div class="form-row three" style="margin-bottom:16px">
+          <div class="form-group">
+            <label for="inputNome">Nome da Peça *</label>
+            <input type="text" id="inputNome" placeholder="Ex: Anel Lua Crescente" />
+          </div>
+          <div class="form-group">
+            <label for="inputCategoria">Categoria *</label>
+            <select id="inputCategoria">
+              <option value="">Carregando...</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="inputPreco">Preço (R$) *</label>
+            <input type="number" id="inputPreco" placeholder="89.90" step="0.01" min="0" />
+          </div>
+        </div>
 
-      <div style="display:flex;gap:12px;flex-wrap:wrap">
-        <button class="btn-primary" id="saveBtn" onclick="salvarPeca()">
-          <span id="saveBtnText">Cadastrar Peça</span>
-          <span class="spinner hidden" id="saveSpinner"></span>
-        </button>
-        <button class="btn-secondary hidden" id="cancelEditBtn" onclick="cancelarEdicao()">Cancelar</button>
-      </div>
-    </section>
+        <div class="form-row" style="margin-bottom:16px">
+          <div class="form-group">
+            <label for="inputEstoque">Estoque (opcional)</label>
+            <input type="number" id="inputEstoque" placeholder="Deixe vazio se não controla" min="0" />
+          </div>
+          <div class="form-group">
+            <label for="inputDesc">Descrição (opcional)</label>
+            <input type="text" id="inputDesc" placeholder="Material, tamanho, acabamento..." />
+          </div>
+        </div>
 
-    <!-- Tabela -->
-    <section class="admin-section">
-      <div class="section-title">Peças Cadastradas</div>
-      <div id="filtrosAdminGrid" style="display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap">
-        <button class="filter-btn active" data-admin-cat="todos" onclick="filtrarAdmin(this)">Todos</button>
-        <!-- Filtros injetados via JS -->
-      </div>
-      <div class="admin-table-wrap">
-        <table class="admin-table">
-          <thead>
-            <tr>
-              <th>Foto</th><th>Nome</th><th>Categoria</th><th>Preço</th><th>Estoque</th><th>Status</th><th>Ações</th>
-            </tr>
-          </thead>
-          <tbody id="adminTableBody">
-            <tr><td colspan="7" style="text-align:center;color:#888;padding:40px">Carregando peças...</td></tr>
-          </tbody>
-        </table>
-      </div>
-    </section>
+        <div class="form-group" style="margin-top:20px; border-top:1px solid var(--gray-light); padding-top:20px; margin-bottom:24px;">
+          <label style="font-size:16px; font-weight:600; color:var(--dark); margin-bottom:4px;">Variações da Peça (Opcional)</label>
+          <p style="font-size:12px; color:var(--gray-mid); margin-bottom:12px;">Ative os tipos de variação (como Tamanho ou Cor) e adicione os valores para esta peça.</p>
+          
+          <div id="variacoesTiposSelector" style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:16px;">
+            <!-- Checkboxes dos Tipos Vêm via JS -->
+          </div>
 
-    <!-- Relatório -->
-    <section class="admin-section">
-      <div class="section-title">Relatório de Peças Mais Adicionadas</div>
-      <div style="display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap">
-        <button class="filter-btn active" data-periodo="7"  onclick="filtrarRelatorio(this)">Últimos 7 dias</button>
-        <button class="filter-btn" data-periodo="30" onclick="filtrarRelatorio(this)">Últimos 30 dias</button>
-        <button class="filter-btn" data-periodo="0"  onclick="filtrarRelatorio(this)">Todos os tempos</button>
-      </div>
-      <div id="relatorioContainer">
-        <p style="color:#888;text-align:center;padding:32px">Carregando relatório...</p>
-      </div>
-    </section>
+          <div id="variacoesAtivasContainer" style="display:flex; flex-direction:column; gap:16px;">
+            <!-- Caixas dos Tipos Ativos Vêm via JS -->
+          </div>
+        </div>
 
-  </main>
+        <input type="hidden" id="editingId" value="" />
 
-  <div class="toast" id="toast"></div>
+        <div style="display:flex;gap:12px;flex-wrap:wrap">
+          <button class="btn-primary" id="saveBtn" onclick="salvarPeca()">
+            <span id="saveBtnText">Cadastrar Peça</span>
+            <span class="spinner hidden" id="saveSpinner"></span>
+          </button>
+          <button class="btn-secondary hidden" id="cancelEditBtn" onclick="cancelarEdicao()">Cancelar</button>
+        </div>
+      </section>
+
+      <!-- Tabela -->
+      <section class="admin-section">
+        <div class="section-title">Peças Cadastradas</div>
+        <div id="filtrosAdminGrid" style="display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap">
+          <button class="filter-btn active" data-admin-cat="todos" onclick="filtrarAdmin(this)">Todos</button>
+          <!-- Filtros injetados via JS -->
+        </div>
+        <div class="admin-table-wrap">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th>Foto</th><th>Nome</th><th>Categoria</th><th>Preço</th><th>Estoque</th><th>Status</th><th>Ações</th>
+              </tr>
+            </thead>
+            <tbody id="adminTableBody">
+              <tr><td colspan="7" style="text-align:center;color:#888;padding:40px">Carregando peças...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- Relatório -->
+      <section class="admin-section">
+        <div class="section-title">Relatório de Peças Mais Adicionadas</div>
+        <div style="display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap">
+          <button class="filter-btn active" data-periodo="7"  onclick="filtrarRelatorio(this)">Últimos 7 dias</button>
+          <button class="filter-btn" data-periodo="30" onclick="filtrarRelatorio(this)">Últimos 30 dias</button>
+          <button class="filter-btn" data-periodo="0"  onclick="filtrarRelatorio(this)">Todos os tempos</button>
+        </div>
+        <div id="relatorioContainer">
+          <p style="color:#888;text-align:center;padding:32px">Carregando relatório...</p>
+        </div>
+      </section>
+    </main>
+
+    <div class="toast" id="toast"></div>
+  </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="js/config.js"></script>
