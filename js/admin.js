@@ -21,13 +21,16 @@ const cancelEditBtn = document.getElementById('cancelEditBtn')
 // ── Tema (Dark Mode Default) ──────────────────────────────────
 function initTheme() {
   const saved = localStorage.getItem('admin-theme')
-  // Se não tem salvo, ou o salvo é 'dark', aplica dark-mode
+  const logo = document.getElementById('adminLogo')
+  
   if (!saved || saved === 'dark') {
     document.body.classList.add('dark-mode')
     document.getElementById('themeToggle').textContent = '☀️'
+    if (logo) logo.src = 'assets/logo-dark.png'
   } else {
     document.body.classList.remove('dark-mode')
     document.getElementById('themeToggle').textContent = '🌙'
+    if (logo) logo.src = 'assets/logo-white.png'
   }
 }
 
@@ -35,6 +38,11 @@ function toggleTheme() {
   const isDark = document.body.classList.toggle('dark-mode')
   localStorage.setItem('admin-theme', isDark ? 'dark' : 'light')
   document.getElementById('themeToggle').textContent = isDark ? '☀️' : '🌙'
+  
+  const logo = document.getElementById('adminLogo')
+  if (logo) {
+    logo.src = isDark ? 'assets/logo-dark.png' : 'assets/logo-white.png'
+  }
 }
 
 // ── Init ─────────────────────────────────────────────────────
