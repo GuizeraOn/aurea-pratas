@@ -412,7 +412,12 @@ async function salvarPeca() {
     preco: document.getElementById('inputPreco'),
     estoque: document.getElementById('inputEstoque'),
     desc: document.getElementById('inputDesc'),
-    url: document.getElementById('inputImg')
+    url: [
+      document.getElementById('inputImg'),
+      document.getElementById('inputImg2'),
+      document.getElementById('inputImg3'),
+      document.getElementById('inputImg4')
+    ]
   }
 
   const nome      = inputs.nome.value.trim()
@@ -420,7 +425,7 @@ async function salvarPeca() {
   const preco     = parseFloat(inputs.preco.value)
   const estoqueVal= inputs.estoque.value
   const descricao = inputs.desc.value.trim()
-  const fotoUrl   = inputs.url.value.trim()
+  const fotoUrls  = inputs.url.map(inp => inp.value.trim())
   const editingId = document.getElementById('editingId').value
 
   // QC Validation
@@ -428,7 +433,7 @@ async function salvarPeca() {
   if (!categoria) { inputs.categoria.classList.add('input-error'); return showToast('Selecione uma categoria.', 'error') }
   if (isNaN(preco) || preco <= 0) { inputs.preco.classList.add('input-error'); return showToast('Informe um preço válido.', 'error') }
   
-  if (!editingId && !fotosArquivos[0] && !fotoUrl) {
+  if (!editingId && !fotosArquivos[0] && !fotoUrls[0]) {
      return showToast('Adicione a foto principal ou uma URL.', 'error')
   }
 
@@ -455,10 +460,12 @@ async function salvarPeca() {
     const resultados = await Promise.all(uploads)
     resultados.forEach((path, i) => { if (path) paths[i] = path })
     
-    // Se tiver URL externa e não tiver foto nova/existente no slot 0, usa a URL
-    if (fotoUrl && !fotosArquivos[0] && !fotosExistentes[0]) {
-      paths[0] = fotoUrl
-    }
+    // Fallback para URLs externas se não houver foto nova/existente no slot
+    fotoUrls.forEach((url, i) => {
+      if (url && !fotosArquivos[i] && !fotosExistentes[i]) {
+        paths[i] = url
+      }
+    })
 
     const payload = {
       nome, categoria, preco, descricao, estoque,
@@ -493,7 +500,7 @@ async function salvarPeca() {
       await db.from('variacoes_peca').insert(variacoesInsert)
     }
 
-    inputs.url.value = ''
+    inputs.url.forEach(inp => inp.value = '')
     limparFormulario()
     await carregarPecasAdmin()
   } catch (err) {
