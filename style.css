@@ -64,13 +64,13 @@ input, select, textarea { font-family: var(--font-body); font-size: 14px; outlin
   border-bottom: 1px solid var(--gray-light);
 }
 .header-inner {
-  max-width: 1200px; margin: 0 auto; padding: 0 24px;
-  height: 68px; display: flex; align-items: center; justify-content: space-between;
+  max-width: 1200px; margin: 0 auto; padding: 16px 24px;
+  display: flex; align-items: center; justify-content: space-between;
 }
 .logo { display: flex; align-items: center; }
-.logo-img { height: 44px; width: auto; transition: var(--transition); }
+.logo-img { height: 96px; width: auto; transition: var(--transition); }
 @media (max-width: 768px) {
-  .logo-img { height: 32px; }
+  .logo-img { height: 82px; }
 }
 
 .cart-btn {
