@@ -34,14 +34,18 @@
   </section>
 
   <!-- ── BUSCA E FILTROS ── -->
-  <div class="filters-wrap">
-    <div class="search-box" style="margin-bottom: 20px;">
-      <input type="text" id="searchInput" placeholder="O que você está procurando?" 
-             style="width:100%; padding:14px 20px; border-radius:100px; border:1px solid var(--gray-light); background:var(--white); font-size:14px; box-shadow:var(--shadow);" />
+  <div class="collection-controls">
+    <div class="search-container">
+      <div class="search-box">
+        <input type="text" id="searchInput" placeholder="O que você está procurando?" 
+               style="width:100%; padding:14px 20px; border-radius:100px; border:1px solid var(--gray-light); background:var(--white); font-size:14px; box-shadow:var(--shadow);" />
+      </div>
     </div>
-    <div class="filters" id="filtersContainer">
-      <button class="filter-btn active" data-cat="todos">Todos</button>
-      <!-- Categorias carregadas via JS -->
+    <div class="filters-wrap">
+      <div class="filters" id="filtersContainer">
+        <button class="filter-btn active" data-cat="todos">Todos</button>
+        <!-- Categorias carregadas via JS -->
+      </div>
     </div>
   </div>
 
