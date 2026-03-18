@@ -690,54 +690,104 @@ async function deletarPeca(id) {
 async function carregarRelatorio(dias) {
   const container = document.getElementById('relatorioContainer')
   container.innerHTML = `<p style="color:#888;text-align:center;padding:32px">Carregando...</p>`
+
   try {
-    let query = db.from('eventos_carrinho').select('peca_id').eq('acao', 'adicionou')
+    // Monta filtro de data
+    let query = db
+      .from('eventos_carrinho')
+      .select('peca_id')
+      .eq('acao', 'adicionou')
+
     if (dias > 0) {
       const desde = new Date(Date.now() - dias * 24 * 60 * 60 * 1000).toISOString()
       query = query.gte('created_at', desde)
     }
-    const { data: eventos, error } = await query
-    if (error) throw error
 
+    const { data: eventos, error } = await query
+
+    if (error) {
+      console.error('Erro na query eventos:', error)
+      throw error
+    }
+
+    // Tabela vazia — sem dados ainda
     if (!eventos || eventos.length === 0) {
-      container.innerHTML = `<p style="color:#888;text-align:center;padding:32px">Nenhum dado ainda. As peças aparecerão aqui conforme as clientes adicionarem ao carrinho.</p>`
+      container.innerHTML = `
+        <div style="text-align:center;padding:40px 20px">
+          <div style="font-size:32px;margin-bottom:12px">📊</div>
+          <p style="color:var(--dark);font-weight:500;margin-bottom:6px">Nenhum dado ainda</p>
+          <p style="color:var(--gray-mid);font-size:13px">
+            Os dados aparecem aqui conforme as clientes adicionarem peças ao carrinho.
+          </p>
+        </div>`
       return
     }
 
-    // Conta por peça
+    // Conta quantas vezes cada peça foi adicionada
     const contagem = {}
-    eventos.forEach(e => { contagem[e.peca_id] = (contagem[e.peca_id] || 0) + 1 })
-    const ordenado = Object.entries(contagem).sort((a, b) => b[1] - a[1]).slice(0, 10)
+    eventos.forEach(e => {
+      contagem[e.peca_id] = (contagem[e.peca_id] || 0) + 1
+    })
+
+    // Ordena e pega top 10
+    const ordenado = Object.entries(contagem)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 10)
+
     const maxCount = ordenado[0][1]
 
-    // Busca nomes
+    // Busca os nomes das peças separadamente (evita JOIN que pode falhar)
     const ids = ordenado.map(([id]) => id)
-    const { data: pecas } = await db.from('pecas').select('id,nome,categoria').in('id', ids)
+    const { data: pecas, error: erroPecas } = await db
+      .from('pecas')
+      .select('id, nome, categoria')
+      .in('id', ids)
+
+    if (erroPecas) console.warn('Erro ao buscar nomes:', erroPecas)
+
     const mapa = Object.fromEntries((pecas || []).map(p => [p.id, p]))
 
+    // Busca nome da categoria separadamente
+    const catIds = [...new Set((pecas || []).map(p => p.categoria).filter(Boolean))]
+    let mapaCats = {}
+    if (catIds.length > 0) {
+      const { data: cats } = await db
+        .from('categorias')
+        .select('id, nome')
+        .in('id', catIds)
+      mapaCats = Object.fromEntries((cats || []).map(c => [c.id, c.nome]))
+    }
+
+    // Renderiza
     container.innerHTML = ordenado.map(([id, count], i) => {
-      const peca   = mapa[id]
-      const nome   = peca ? peca.nome : 'Peça removida'
-      const cat    = peca ? (CATEGORIAS[peca.categoria] || peca.categoria) : ''
-      const pct    = Math.round((count / maxCount) * 100)
-      const medalha= i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `${i+1}º`
+      const peca    = mapa[id]
+      const nome    = peca ? peca.nome : 'Peça removida'
+      const catNome = peca ? (mapaCats[peca.categoria] || '') : ''
+      const pct     = Math.round((count / maxCount) * 100)
+      const medalha = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `${i + 1}º`
+
       return `
         <div class="relatorio-item">
           <div class="relatorio-rank">${medalha}</div>
           <div class="relatorio-info">
-            <div class="relatorio-nome">${nome} ${cat ? `<span style="font-size:12px;color:#888">· ${cat}</span>` : ''}</div>
-            <div class="relatorio-bar-wrap"><div class="relatorio-bar" style="width:${pct}%"></div></div>
+            <div class="relatorio-nome">
+              ${nome}
+              ${catNome ? `<span style="font-size:12px;color:#888"> · ${catNome}</span>` : ''}
+            </div>
+            <div class="relatorio-bar-wrap">
+              <div class="relatorio-bar" style="width:${pct}%"></div>
+            </div>
           </div>
           <div class="relatorio-count">${count} <span>adições</span></div>
         </div>`
     }).join('')
+
   } catch (err) {
-    console.error('ERRO RELATÓRIO:', JSON.stringify(err))
+    console.error('ERRO RELATÓRIO:', err)
     container.innerHTML = `
-      <div style="text-align:center; padding:48px; color:var(--gray-mid);">
-        <p style="font-family:var(--font-display); font-size:18px; color:var(--dark); margin-bottom:8px;">Relatório temporariamente indisponível</p>
-        <p style="font-size:14px;">Verifique sua conexão ou tente novamente mais tarde.</p>
-        <button class="btn-secondary" style="margin-top:20px; width:auto; padding:8px 24px;" onclick="carregarRelatorio(7)">Tentar Novamente</button>
+      <div style="text-align:center;padding:40px">
+        <p style="color:var(--red);margin-bottom:12px">Erro ao carregar o relatório.</p>
+        <button onclick="carregarRelatorio(7)" class="btn-secondary">Tentar Novamente</button>
       </div>`
   }
 }
