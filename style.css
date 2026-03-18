@@ -2,7 +2,7 @@
    AUREA PRATAS — style.css
    ============================================================ */
 
-@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Sans:wght@300;400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;0,600;1,400&family=DM+Sans:wght@300;400;500&display=swap');
 
 :root {
   --gold:        #B8972A;
@@ -19,7 +19,7 @@
   --radius:      12px;
   --shadow:      0 2px 24px rgba(0,0,0,0.07);
   --shadow-hover:0 8px 40px rgba(0,0,0,0.13);
-  --font-display:'Cormorant Garamond', Georgia, serif;
+  --font-display: 'Lora', Georgia, serif;
   --font-body:   'DM Sans', sans-serif;
   --transition:  all 0.25s cubic-bezier(0.4,0,0.2,1);
 }
@@ -79,7 +79,7 @@ input, select, textarea { font-family: var(--font-body); font-size: 14px; outlin
 /* ── Hero ── */
 .hero { text-align: center; padding: 72px 24px 48px; max-width: 640px; margin: 0 auto; }
 .hero-eyebrow { font-size: 11px; letter-spacing: 0.22em; text-transform: uppercase; color: var(--gold); margin-bottom: 16px; }
-.hero-title { font-family: var(--font-display); font-size: clamp(36px,6vw,56px); font-weight: 300; line-height: 1.15; margin-bottom: 16px; }
+.hero-title { font-family: var(--font-display); font-size: clamp(36px,6vw,56px); font-weight: 400; line-height: 1.15; margin-bottom: 16px; }
 .hero-title em { font-style: italic; color: var(--gold); }
 .hero-desc { font-size: 15px; color: var(--gray-dark); max-width: 400px; margin: 0 auto; }
 .hero-divider { width: 48px; height: 1px; background: var(--gold-light); margin: 28px auto 0; }
@@ -404,7 +404,7 @@ input, select, textarea { font-family: var(--font-body); font-size: 14px; outlin
 .admin-nav-link:hover { color: var(--white); }
 
 .admin-main { max-width: 1100px; margin: 0 auto; padding: 40px 24px 80px; }
-.admin-title { font-family: var(--font-display); font-size: 32px; font-weight: 300; margin-bottom: 4px; }
+.admin-title { font-family: var(--font-display); font-size: 32px; font-weight: 400; margin-bottom: 4px; }
 .admin-subtitle { font-size: 14px; color: var(--gray-mid); margin-bottom: 36px; }
 
 .admin-stats { display: grid; grid-template-columns: repeat(auto-fit,minmax(160px,1fr)); gap: 16px; margin-bottom: 36px; }
