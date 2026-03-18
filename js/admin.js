@@ -53,9 +53,16 @@ async function selecionarFoto(idx, file) {
   if (file.size > 15 * 1024 * 1024) { showToast('Foto excedeu 15MB.', 'error'); return }
   
   try {
+    const antes = file.size
     const webpFile = await comprimirParaWebP(file, 0.8)
     fotosArquivos[idx] = webpFile
     
+    // Feedback de economia
+    const kb1     = (antes / 1024).toFixed(0)
+    const kb2     = (webpFile.size / 1024).toFixed(0)
+    const economia = Math.round((1 - webpFile.size / antes) * 100)
+    if (economia > 5) showToast(`Foto otimizada! ${kb1}KB → ${kb2}KB $(-${economia}%)`, 'success')
+
     const reader = new FileReader()
     reader.onload = e => mostrarPreview(idx, e.target.result)
     reader.readAsDataURL(webpFile)
