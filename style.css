@@ -101,8 +101,10 @@ input, select, textarea { font-family: var(--font-body); font-size: 14px; outlin
 .collection-controls { 
   max-width: 1200px; margin: 0 auto; padding-bottom: 32px; 
 }
-.search-container { 
-  padding: 0 24px 20px; 
+.search-container {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0 24px 20px;
 }
 
 .search-row {
@@ -112,7 +114,24 @@ input, select, textarea { font-family: var(--font-body); font-size: 14px; outlin
 }
 
 .search-box {
+  width: 100%;
+  box-sizing: border-box;
   flex: 1;
+}
+
+.search-input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 14px 20px;
+  border-radius: 100px;
+  border: 1px solid var(--gray-light);
+  background: var(--white);
+  font-size: 14px;
+  box-shadow: var(--shadow);
+  transition: var(--transition);
+}
+.search-input:focus {
+  border-color: var(--accent-light);
 }
 
 .sort-select {
