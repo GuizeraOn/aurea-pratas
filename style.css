@@ -359,16 +359,20 @@ input, select, textarea { font-family: var(--font-body); font-size: 14px; outlin
 
 /* ── Toast ── */
 .toast {
-  position: fixed; bottom: 28px; left: 50%;
+  position: fixed; bottom: 90px; left: 50%;
   transform: translateX(-50%) translateY(20px);
   background: var(--dark); color: var(--white);
   padding: 12px 24px; border-radius: 100px;
-  font-size: 14px; font-weight: 500; z-index: 999;
+  font-size: 14px; font-weight: 500; z-index: 2000;
   opacity: 0; transition: all 0.3s ease; white-space: nowrap; pointer-events: none;
 }
 .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 .toast.success { background: var(--green); }
 .toast.error   { background: var(--red); }
+
+@media (max-width: 768px) {
+  .toast { bottom: 80px; padding: 10px 20px; font-size: 13px; }
+}
 
 /* ── Spinner ── */
 .spinner { width: 20px; height: 20px; border: 2.5px solid rgba(255,255,255,0.3); border-top-color: white; border-radius: 50%; animation: spin 0.7s linear infinite; display: inline-block; }
