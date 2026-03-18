@@ -47,9 +47,14 @@ function simpleHash(str) {
 
 function verificarSessao() {
   const auth = sessionStorage.getItem('admin_auth')
-  if (auth === SENHA_HASH) {
+  // Só deixa entrar se o hash existir E for igual ao esperado
+  if (auth && SENHA_HASH && auth === SENHA_HASH) {
     carregarTudo()
   } else {
+    // Limpa qualquer valor inválido que possa estar salvo
+    sessionStorage.removeItem('admin_auth')
+    document.getElementById('loginScreen').style.display = 'flex'
+    document.getElementById('adminPanel').style.display = 'none'
     // Garante que o tema seja carregado mesmo sem login para a tela de login ficar bonita
     initTheme()
   }
