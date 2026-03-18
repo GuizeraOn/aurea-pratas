@@ -172,7 +172,7 @@ function renderTabela() {
     const statusCls= peca.visivel ? 'visible' : 'hidden-product'
     const statusTxt= peca.visivel ? '● Visível' : '○ Oculta'
     const estoque  = peca.estoque != null
-      ? (peca.estoque === 0 ? '<span style="color:var(--red)">Esgotado</span>'
+      ? (peca.estoque === 0 ? `<span style="color:var(--red); font-weight:600">Esgotado</span> <button type="button" class="action-btn" style="padding:2px 8px; font-size:10px; margin-left:6px; color:var(--dark); background:#eee; border:none;" onclick="promptReporEstoque('${peca.id}')">Repor</button>`
         : peca.estoque <= 3 ? `<span style="color:var(--red)">${peca.estoque} un.</span>`
         : `${peca.estoque} un.`)
       : '<span style="color:#bbb">—</span>'
@@ -268,6 +268,32 @@ function editarPeca(id) {
   document.getElementById('inputCategoria').value = p.categoria
   document.getElementById('inputPreco').value     = p.preco
   document.getElementById('inputEstoque').value   = p.estoque ?? ''
+  
+  const formGroupEstoque = document.getElementById('inputEstoque').parentElement
+  let toggleBtn = document.getElementById('btnToggleEsgotado')
+  if (!toggleBtn) {
+    toggleBtn = document.createElement('button')
+    toggleBtn.id = 'btnToggleEsgotado'
+    toggleBtn.type = 'button'
+    toggleBtn.style = 'margin-top:6px; font-size:12px; font-weight:600; padding:6px 10px; border-radius:4px; border:none; cursor:pointer; width:max-content; transition:0.2s;'
+    formGroupEstoque.appendChild(toggleBtn)
+  }
+
+  if (p.estoque != null && p.estoque > 0) {
+    toggleBtn.textContent = 'Marcar como Esgotado'
+    toggleBtn.style.background = '#FDECEA'
+    toggleBtn.style.color = 'var(--red)'
+    toggleBtn.onclick = () => atualizarEstoqueBanco(p.id, 0)
+    toggleBtn.style.display = 'block'
+  } else if (p.estoque === 0) {
+    toggleBtn.textContent = 'Marcar como Disponível'
+    toggleBtn.style.background = '#E8F5EE'
+    toggleBtn.style.color = 'var(--green)'
+    toggleBtn.onclick = () => promptReporEstoque(p.id)
+    toggleBtn.style.display = 'block'
+  } else {
+    toggleBtn.style.display = 'none'
+  }
   document.getElementById('inputDesc').value      = p.descricao || ''
   document.getElementById('editingId').value      = p.id
 
@@ -298,6 +324,9 @@ function limparFormulario() {
   document.getElementById('formTitle').textContent = 'Cadastrar Nova Peça'
   saveBtnText.textContent = 'Cadastrar Peça'
   cancelEditBtn.classList.add('hidden')
+  
+  const toggleBtn = document.getElementById('btnToggleEsgotado')
+  if (toggleBtn) toggleBtn.style.display = 'none'
 }
 
 // ── Toggle visível ────────────────────────────────────────────
@@ -408,4 +437,31 @@ function showToast(msg, tipo = '') {
   toastEl.textContent = msg
   toastEl.className   = `toast ${tipo} show`
   setTimeout(() => toastEl.classList.remove('show'), 2800)
+}
+
+async function atualizarEstoqueBanco(id, valor) {
+  try {
+    const { error } = await db.from('pecas').update({ estoque: valor }).eq('id', id)
+    if (error) throw error
+    if (valor === 0) showToast('Marcada como esgotada!', 'success')
+    else showToast('Estoque reposto com sucesso!', 'success')
+    await carregarPecasAdmin()
+    
+    if (document.getElementById('editingId').value === id) {
+       editarPeca(id)
+    }
+  } catch(e) {
+    showToast('Erro ao atualizar estoque.', 'error')
+  }
+}
+
+function promptReporEstoque(id) {
+  const q = prompt('Digite a nova quantidade (unidades):')
+  if (q === null) return
+  const num = parseInt(q)
+  if (isNaN(num) || num <= 0) {
+     showToast('Quantidade inválida.', 'error')
+     return
+  }
+  atualizarEstoqueBanco(id, num)
 }

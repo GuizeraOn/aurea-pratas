@@ -39,7 +39,7 @@ document.addEventListener('DOMContentLoaded', () => {
 // ── Carregar ──────────────────────────────────────────────────
 async function carregarPecas() {
   try {
-    const { data, error } = await db.from('pecas').select('*').eq('visivel', true).order('created_at', { ascending: false })
+    const { data, error } = await db.from('pecas').select('*').eq('visivel', true).or('estoque.gt.0,estoque.is.null').order('created_at', { ascending: false })
     if (error) throw error
     todasPecas = data || []
     renderGrid()
