@@ -81,10 +81,22 @@ function renderFiltros() {
 function renderGrid() {
   const filtradas = catAtiva === 'todos' ? todasPecas : todasPecas.filter(p => p.categoria === catAtiva)
   if (filtradas.length === 0) {
-    grid.innerHTML = `<div class="empty-state"><p>Nenhuma peça nessa categoria.</p></div>`
+    grid.innerHTML = `
+      <div class="empty-state">
+        <p>Nenhuma peça encontrada nesta categoria no momento.</p>
+        <button class="empty-state-btn" onclick="limparFiltros()">Limpar Filtros e Ver Tudo</button>
+      </div>`
     return
   }
   grid.innerHTML = filtradas.map(p => cardHTML(p)).join('')
+}
+
+function limparFiltros() {
+  catAtiva = 'todos'
+  document.querySelectorAll('#filtersContainer .filter-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.cat === 'todos')
+  })
+  renderGrid()
 }
 
 // ── Card HTML ─────────────────────────────────────────────────

@@ -156,12 +156,24 @@ async function carregarCategoriasETipos() {
 async function criarCategoria() {
   const input = document.getElementById('novaCatNome')
   const nome = input.value.trim()
-  if (!nome) return
+  if (!nome) {
+    input.classList.add('input-error')
+    showToast('Preencha o nome da categoria', 'error')
+    input.focus()
+    input.oninput = () => input.classList.remove('input-error')
+    return
+  }
   const slug = nome.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '')
   const ordem = categorias.length + 1
   const { error } = await db.from('categorias').insert([{ nome, slug, ordem }])
-  if (!error) { showToast('Categoria criada!', 'success'); input.value=''; await carregarCategoriasETipos() }
-  else showToast('Erro ao criar.', 'error')
+  if (!error) { 
+    showToast('Categoria criada!', 'success')
+    input.value=''
+    input.classList.remove('input-error')
+    await carregarCategoriasETipos() 
+  } else {
+    showToast('Erro ao criar.', 'error')
+  }
 }
 
 async function excluirCategoria(id) {
@@ -365,16 +377,38 @@ function filtrarAdmin(btn) {
 
 // ── Salvar peça ───────────────────────────────────────────────
 async function salvarPeca() {
-  const nome      = document.getElementById('inputNome').value.trim()
-  const categoria = document.getElementById('inputCategoria').value
-  const preco     = parseFloat(document.getElementById('inputPreco').value)
-  const estoqueVal= document.getElementById('inputEstoque').value
-  const descricao = document.getElementById('inputDesc').value.trim()
+  const inputs = {
+    nome: document.getElementById('inputNome'),
+    categoria: document.getElementById('inputCategoria'),
+    preco: document.getElementById('inputPreco'),
+    estoque: document.getElementById('inputEstoque'),
+    desc: document.getElementById('inputDesc')
+  }
+
+  const nome      = inputs.nome.value.trim()
+  const categoria = inputs.categoria.value
+  const preco     = parseFloat(inputs.preco.value)
+  const estoqueVal= inputs.estoque.value
+  const descricao = inputs.desc.value.trim()
   const editingId = document.getElementById('editingId').value
 
-  if (!nome)                          return showToast('Informe o nome da peça.', 'error')
-  if (!categoria)                     return showToast('Selecione uma categoria.', 'error')
-  if (isNaN(preco) || preco <= 0)     return showToast('Informe um preço válido.', 'error')
+  // QC Validation
+  let hasError = false
+  Object.values(inputs).forEach(el => el.classList.remove('input-error'))
+
+  if (!nome)      { inputs.nome.classList.add('input-error'); hasError = true }
+  if (!categoria) { inputs.categoria.classList.add('input-error'); hasError = true }
+  if (isNaN(preco) || preco <= 0) { inputs.preco.classList.add('input-error'); hasError = true }
+
+  if (hasError) {
+    showToast('Preencha os campos obrigatórios (*).', 'error')
+    Object.values(inputs).forEach(el => {
+      el.oninput = () => el.classList.remove('input-error')
+      if (el.tagName === 'SELECT') el.onchange = () => el.classList.remove('input-error')
+    })
+    return
+  }
+
   if (!editingId && !fotosArquivos[0]) return showToast('Adicione pelo menos a foto principal.', 'error')
 
   const estoque = estoqueVal !== '' ? parseInt(estoqueVal) : null
@@ -599,7 +633,12 @@ async function carregarRelatorio(dias) {
     }).join('')
   } catch (err) {
     console.error(err)
-    container.innerHTML = `<p style="color:var(--red);text-align:center;padding:32px">Erro ao carregar relatório.</p>`
+    container.innerHTML = `
+      <div style="text-align:center; padding:48px; color:var(--gray-mid);">
+        <p style="font-family:var(--font-display); font-size:18px; color:var(--dark); margin-bottom:8px;">Relatório temporariamente indisponível</p>
+        <p style="font-size:14px;">Verifique sua conexão ou tente novamente mais tarde.</p>
+        <button class="btn-secondary" style="margin-top:20px; width:auto; padding:8px 24px;" onclick="carregarRelatorio(7)">Tentar Novamente</button>
+      </div>`
   }
 }
 
