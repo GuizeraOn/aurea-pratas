@@ -427,8 +427,23 @@ function renderCarrinho() {
   atualizarContadorCarrinho()
 }
 
-function abrirCarrinho()  { renderCarrinho(); cartDrawer.classList.add('open'); cartOverlay.classList.add('open'); document.body.style.overflow = 'hidden' }
-function fecharCarrinho() { cartDrawer.classList.remove('open'); cartOverlay.classList.remove('open'); document.body.style.overflow = '' }
+function abrirCarrinho()  { 
+  renderCarrinho()
+  cartDrawer.classList.add('open')
+  cartOverlay.classList.add('open')
+  document.body.style.overflow = 'hidden'
+  const floatingBar = document.getElementById('cartFloatingBar')
+  if (floatingBar) floatingBar.classList.add('hidden')
+}
+function fecharCarrinho() { 
+  cartDrawer.classList.remove('open')
+  cartOverlay.classList.remove('open')
+  document.body.style.overflow = ''
+  if (carrinho.length > 0) {
+    const floatingBar = document.getElementById('cartFloatingBar')
+    if (floatingBar) floatingBar.classList.remove('hidden')
+  }
+}
 
 // ── WhatsApp ──────────────────────────────────────────────────
 function finalizarWhatsapp() {
