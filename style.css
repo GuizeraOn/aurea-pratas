@@ -174,47 +174,86 @@ input, select, textarea { font-family: var(--font-body); font-size: 14px; outlin
 }
 .card-dot.active { background: var(--white); }
 
+.card-badges-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 6px;
+}
 .card-badge {
-  position: absolute; top: 12px; left: 12px;
-  background: rgba(255,255,255,0.92); backdrop-filter: blur(4px);
-  font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase;
-  color: var(--gray-dark); padding: 4px 10px; border-radius: 100px; font-weight: 500;
+  display: inline-block;
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  background: var(--gray-light);
+  color: var(--gray-dark);
+  padding: 3px 10px;
+  border-radius: 100px;
+  font-weight: 500;
   max-width: 120px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 
 /* Badge Novidade */
 .badge-new {
-  position: absolute; top: 12px; right: 12px;
-  background: var(--gold); color: var(--white);
-  font-size: 9px; font-weight: 700; letter-spacing: 0.1em;
-  text-transform: uppercase; padding: 3px 8px; border-radius: 100px;
+  display: inline-block;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  background: var(--gold);
+  color: var(--white);
+  padding: 3px 8px;
+  border-radius: 100px;
 }
 
 /* Badge Últimas unidades */
 .badge-low {
-  position: absolute; bottom: 48px; left: 12px; right: 12px;
-  background: rgba(192,57,43,0.9); color: var(--white);
-  font-size: 10px; font-weight: 600; text-align: center;
-  padding: 4px 8px; border-radius: 6px;
+  display: inline-block;
+  font-size: 11px;
+  color: var(--red);
+  font-weight: 500;
+  margin-top: 4px;
 }
 
 /* Badge Esgotada */
 .badge-out {
-  position: absolute; inset: 0;
-  background: rgba(255,255,255,0.7);
-  display: flex; align-items: center; justify-content: center;
-  font-size: 13px; font-weight: 700; letter-spacing: 0.1em;
-  color: var(--red); text-transform: uppercase;
+  display: block;
+  width: 100%;
+  margin-top: 10px;
+  padding: 10px;
+  border-radius: 8px;
+  background: var(--gray-light);
+  color: var(--gray-mid);
+  font-size: 13px;
+  font-weight: 600;
+  text-align: center;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
 }
 
 .card-add-btn {
-  position: absolute; bottom: 12px; right: 12px;
-  width: 38px; height: 38px; background: var(--white); border-radius: 50%;
-  display: flex; align-items: center; justify-content: center;
-  box-shadow: 0 2px 12px rgba(0,0,0,0.12); transition: var(--transition); color: var(--gray-mid);
+  display: block;
+  width: 100%;
+  margin-top: 10px;
+  padding: 10px;
+  border-radius: 8px;
+  border: 1.5px solid var(--gray-light);
+  background: var(--white);
+  color: var(--dark);
+  font-size: 13px;
+  font-weight: 500;
+  text-align: center;
+  transition: var(--transition);
 }
-.card-add-btn:hover, .card-add-btn.added { background: var(--gold); color: var(--white); }
-.card-add-btn svg { width: 18px; height: 18px; stroke: currentColor; fill: none; stroke-width: 2; }
+.card-add-btn:hover {
+  border-color: var(--gold);
+  color: var(--gold);
+}
+.card-add-btn.added {
+  background: var(--gold);
+  border-color: var(--gold);
+  color: var(--white);
+}
 
 .card-info { padding: 16px 16px 18px; }
 .card-name { font-family: var(--font-display); font-size: 17px; font-weight: 400; margin-bottom: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }

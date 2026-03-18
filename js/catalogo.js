@@ -140,30 +140,39 @@ function cardHTML(peca) {
   const dotsHTML = fotos.length > 1 ? `<div class="card-dots">${fotos.map((_,i) => `<div class="card-dot ${i===0?'active':''}" data-i="${i}"></div>`).join('')}</div>` : ''
   const carouselBtns = fotos.length > 1 ? `<button class="card-carousel-btn prev" onclick="carouselCard(event,'${peca.id}',-1)">‹</button><button class="card-carousel-btn next" onclick="carouselCard(event,'${peca.id}',1)">›</button>` : ''
 
-  let cartBtnHTML = ''
-  if (!esgotada) {
-    if (temVariaveis) {
-      cartBtnHTML = `<button class="card-add-btn" onclick="clickCardAdd(event,'${peca.id}')" style="font-size:11px; padding:6px 10px; width:auto; height:auto; border-radius:100px;">Opções</button>`
-    } else {
-      cartBtnHTML = `<button class="card-add-btn ${noCarrinho?'added':''}" onclick="toggleCarrinhoSimples(event,'${peca.id}')" title="${noCarrinho?'Remover':'Adicionar'}">${noCarrinho ? iconeCheck() : iconePlus()}</button>`
-    }
+  // Lógica de botões/status na parte inferior
+  let statusHTML = ''
+  if (esgotada) {
+    statusHTML = `<div class="badge-out">Esgotada</div>`
+  } else {
+    // Se tiver variações, o botão abre o modal (Opções)
+    // Se não tiver, adiciona direto (Adicionar)
+    const btnTexto = temVariaveis ? '+ Opções' : (noCarrinho ? '✔ Adicionado' : '+ Adicionar')
+    const btnAcao  = temVariaveis ? `clickCardAdd(event,'${peca.id}')` : `toggleCarrinhoSimples(event,'${peca.id}')`
+    
+    statusHTML = `
+      ${poucasUn ? '<div class="badge-low">Ultimas unidades!</div>' : ''}
+      <button class="card-add-btn ${noCarrinho?'added':''}" onclick="${btnAcao}">${btnTexto}</button>
+    `
   }
 
   return `
     <article class="product-card" data-id="${peca.id}" data-foto-idx="0" data-fotos='${JSON.stringify(fotos)}'>
       <div class="card-img-wrap" onclick="abrirModal('${peca.id}')">
         <img id="card-img-${peca.id}" src="${fotoAtual}" alt="${peca.nome}" loading="lazy" onerror="this.src='https://placehold.co/400x400/e8e8e4/888?text=Foto'" />
-        <span class="card-badge">${catLabel}</span>
-        ${isNova ? '<span class="badge-new">✦ Novo</span>' : ''}
-        ${poucasUn ? '<div class="badge-low">⚠️ Últimas unidades!</div>' : ''}
-        ${esgotada ? '<div class="badge-out">Esgotada</div>' : ''}
         ${carouselBtns}
         ${dotsHTML}
-        ${cartBtnHTML}
       </div>
-      <div class="card-info" onclick="abrirModal('${peca.id}')" style="cursor:pointer">
-        <div class="card-name">${peca.nome}</div>
-        <div class="card-price">${formatarPreco(peca.preco)}</div>
+      <div class="card-info" style="cursor:pointer">
+        <div class="card-badges-row" onclick="abrirModal('${peca.id}')">
+          <span class="card-badge">${catLabel}</span>
+          ${isNova ? '<span class="badge-new">Novo</span>' : ''}
+        </div>
+        <div class="card-name" onclick="abrirModal('${peca.id}')">${peca.nome}</div>
+        <div class="card-price" onclick="abrirModal('${peca.id}')">${formatarPreco(peca.preco)}</div>
+        <div class="card-status-wrap">
+          ${statusHTML}
+        </div>
       </div>
     </article>`
 }
