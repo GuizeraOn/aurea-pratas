@@ -150,6 +150,8 @@ function abrirModal(id) {
        <div class="modal-thumbs">${thumbsHTML}</div>`
     : ''
 
+  const imagensHTML = fotos.map(f => `<img src="${f}" alt="${peca.nome}" loading="lazy" />`).join('')
+
   const overlay = document.createElement('div')
   overlay.className = 'modal-overlay'
   overlay.id = 'pecaModal'
@@ -158,7 +160,9 @@ function abrirModal(id) {
       <button class="modal-close" onclick="fecharModal()">✕</button>
       <div class="modal-inner">
         <div class="modal-gallery">
-          <img id="modalFotoPrincipal" src="${fotos[0]}" alt="${peca.nome}" />
+          <div class="modal-gallery-scroll" id="modalGalleryScroll" onscroll="atualizarPontoModal()">
+            ${imagensHTML}
+          </div>
           ${navHTML}
         </div>
         <div class="modal-info">
@@ -200,16 +204,27 @@ function navModal(dir) {
   let idx = overlay._fotoIdx + dir
   if (idx < 0) idx = overlay._fotos.length - 1
   if (idx >= overlay._fotos.length) idx = 0
-  overlay._fotoIdx = idx
   trocarFotoModal(idx)
 }
 
 function trocarFotoModal(idx) {
   const overlay = document.getElementById('pecaModal')
-  if (!overlay) return
+  const scroll = document.getElementById('modalGalleryScroll')
+  if (!overlay || !scroll) return
   overlay._fotoIdx = idx
-  document.getElementById('modalFotoPrincipal').src = overlay._fotos[idx]
+  scroll.scrollTo({ left: scroll.clientWidth * idx, behavior: 'smooth' })
   overlay.querySelectorAll('.modal-thumb').forEach((t,i) => t.classList.toggle('active', i === idx))
+}
+
+function atualizarPontoModal() {
+  const overlay = document.getElementById('pecaModal')
+  const scroll = document.getElementById('modalGalleryScroll')
+  if (!overlay || !scroll) return
+  const idx = Math.round(scroll.scrollLeft / scroll.clientWidth)
+  if (idx !== overlay._fotoIdx) {
+    overlay._fotoIdx = idx
+    overlay.querySelectorAll('.modal-thumb').forEach((t,i) => t.classList.toggle('active', i === idx))
+  }
 }
 
 function fecharModal() {
