@@ -135,6 +135,7 @@ input, select, textarea { font-family: var(--font-body); font-size: 14px; outlin
   background: rgba(255,255,255,0.92); backdrop-filter: blur(4px);
   font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase;
   color: var(--gray-dark); padding: 4px 10px; border-radius: 100px; font-weight: 500;
+  max-width: 120px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 
 /* Badge Novidade */
@@ -454,5 +455,5 @@ input, select, textarea { font-family: var(--font-body); font-size: 14px; outlin
   .modal-info { padding: 20px; }
 }
 @media (max-width: 400px) {
-  .catalog-grid { grid-template-columns: 1fr; }
+  .catalog-grid { grid-template-columns: repeat(2, 1fr); }
 }
