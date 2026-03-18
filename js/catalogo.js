@@ -413,10 +413,12 @@ function atualizarContadorCarrinho() {
   cartCountEl.textContent = n
   cartCountEl.classList.toggle('hidden', n === 0)
 
-  // Barra Flutuante
+  // Barra Flutuante (só mostra se o carrinho tiver itens E o drawer estiver fechado)
   const floatingBar = document.getElementById('cartFloatingBar')
+  const isDrawerOpen = cartDrawer.classList.contains('open')
+
   if (floatingBar) {
-    if (n > 0) {
+    if (n > 0 && !isDrawerOpen) {
       floatingBar.classList.remove('hidden')
       document.getElementById('cartFloatingQty').textContent = `${n} ${n === 1 ? 'peça' : 'peças'}`
       document.getElementById('cartFloatingTotal').textContent = formatarPreco(total)
