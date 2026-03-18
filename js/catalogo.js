@@ -35,14 +35,29 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('filtersContainer').addEventListener('click', e => {
     const btn = e.target.closest('.filter-btn')
     if (!btn) return
+    const novaCat = btn.dataset.cat
+    if (novaCat === catAtiva) return
+
+    catAtiva = novaCat
+    
+    // Atualizar URL (Routing)
+    const catObj = todasCategorias.find(c => c.id === catAtiva)
+    const slug   = catObj ? catObj.slug : ''
+    const novoPath = slug ? `/${slug}` : '/'
+    window.history.pushState({ catId: catAtiva }, '', novoPath)
+
     document.querySelectorAll('#filtersContainer .filter-btn').forEach(b => b.classList.remove('active'))
     btn.classList.add('active')
-    catAtiva = btn.dataset.cat
     renderGrid()
   })
   document.getElementById('searchInput').addEventListener('input', e => {
     buscaAtiva = e.target.value.toLowerCase().trim()
     renderGrid()
+  })
+
+  // Sincronizar com navegação do navegador
+  window.addEventListener('popstate', (e) => {
+    sincronizarFiltroPeloUrl()
   })
 })
 
@@ -69,10 +84,38 @@ async function carregarPecas() {
     if (varsError) console.warn('Erro ao carregar variações:', varsError)
     todasVariacoes = varsData || []
     
+    // Routing: Definir categoria ativa baseada no URL inicial
+    sincronizarFiltroPeloUrl(true)
+
     renderFiltros()
     renderGrid()
   } catch(e) {
     grid.innerHTML = `<div class="empty-state"><p>Erro ao carregar o catálogo. Tente recarregar a página.</p></div>`
+  }
+}
+
+// ── Routing ───────────────────────────────────────────────────
+function sincronizarFiltroPeloUrl(isInit = false) {
+  const path = window.location.pathname.replace(/^\/|\/$/g, '') // remove leading/trailing slashes
+  
+  if (!path) {
+    catAtiva = 'todos'
+  } else {
+    // Busca slug correspondente nas categorias carregadas
+    const catEncontrada = todasCategorias.find(c => c.slug === path)
+    if (catEncontrada) {
+      catAtiva = catEncontrada.id
+    } else {
+      catAtiva = 'todos'
+    }
+  }
+
+  // Se não for o init, atualiza a UI (no init o renderFiltros cuidará disso)
+  if (!isInit) {
+    document.querySelectorAll('#filtersContainer .filter-btn').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.cat === catAtiva)
+    })
+    renderGrid()
   }
 }
 
