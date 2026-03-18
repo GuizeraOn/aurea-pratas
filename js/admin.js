@@ -49,12 +49,58 @@ function configurarSlots() {
   }
 }
 
-function selecionarFoto(idx, file) {
-  if (file.size > 5 * 1024 * 1024) { showToast('Foto muito grande! Máx. 5MB.', 'error'); return }
-  fotosArquivos[idx] = file
-  const reader = new FileReader()
-  reader.onload = e => mostrarPreview(idx, e.target.result)
-  reader.readAsDataURL(file)
+async function selecionarFoto(idx, file) {
+  if (file.size > 15 * 1024 * 1024) { showToast('Foto excedeu 15MB.', 'error'); return }
+  
+  try {
+    const webpFile = await comprimirParaWebP(file, 0.8)
+    fotosArquivos[idx] = webpFile
+    
+    const reader = new FileReader()
+    reader.onload = e => mostrarPreview(idx, e.target.result)
+    reader.readAsDataURL(webpFile)
+  } catch (err) {
+    console.error(err)
+    showToast('Erro ao comprimir imagem', 'error')
+  }
+}
+
+function comprimirParaWebP(file, qualidade = 0.8) {
+  return new Promise((resolve, reject) => {
+    if (!file.type.startsWith('image/')) return resolve(file)
+
+    const img = new Image()
+    img.src = URL.createObjectURL(file)
+    img.onload = () => {
+      URL.revokeObjectURL(img.src)
+      const canvas = document.createElement('canvas')
+      const ctx = canvas.getContext('2d')
+      
+      // Limite dimensionado para ótima leitura mas controle de tamanho
+      const MAX_WIDTH = 1200
+      const MAX_HEIGHT = 1200
+      let width = img.width
+      let height = img.height
+      
+      if (width > height) {
+        if (width > MAX_WIDTH) { height *= MAX_WIDTH / width; width = MAX_WIDTH }
+      } else {
+        if (height > MAX_HEIGHT) { width *= MAX_HEIGHT / height; height = MAX_HEIGHT }
+      }
+      
+      canvas.width = width
+      canvas.height = height
+      ctx.drawImage(img, 0, 0, width, height)
+      
+      canvas.toBlob(blob => {
+        if (!blob) return reject('Erro ao converter no canvas')
+        // Substitui a extensão por .webp
+        const base = file.name.substring(0, file.name.lastIndexOf('.')) || file.name
+        resolve(new File([blob], `${base}.webp`, { type: 'image/webp' }))
+      }, 'image/webp', qualidade)
+    }
+    img.onerror = () => reject('Falha ao carregar a imagem original')
+  })
 }
 
 function mostrarPreview(idx, src) {
