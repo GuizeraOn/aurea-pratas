@@ -24,6 +24,17 @@
   --transition:  all 0.25s cubic-bezier(0.4,0,0.2,1);
 }
 
+.dark-mode {
+  --bg:          #121212;
+  --white:       #1E1E1E;
+  --dark:        #F5F5F5;
+  --gray-light:  #2D2D2D;
+  --gray-mid:    #999;
+  --gray-dark:   #CCC;
+  --gold-pale:   #2D281D;
+  --shadow:      0 4px 20px rgba(0,0,0,0.4);
+}
+
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 html, body {
   overflow-x: hidden;
@@ -396,8 +407,22 @@ input, select, textarea { font-family: var(--font-body); font-size: 14px; outlin
 /* ============================================================
    ADMIN
    ============================================================ */
-.admin-body { background: #F4F4F0; min-height: 100vh; }
-.admin-nav { background: var(--dark); padding: 0 32px; height: 60px; display: flex; align-items: center; justify-content: space-between; }
+.admin-body { background: var(--bg); min-height: 100vh; transition: background 0.3s ease; }
+.admin-nav { 
+  background: var(--dark); padding: 0 32px; height: 60px; display: flex; align-items: center; justify-content: space-between; 
+  border-bottom: 1px solid var(--gray-light);
+}
+
+.theme-toggle-btn {
+  padding: 8px; border-radius: 8px;
+  background: rgba(255,255,255,0.08);
+  color: #FFD700; font-size: 16px;
+  margin-right: 16px; transition: var(--transition);
+}
+.theme-toggle-btn:hover { background: rgba(255,255,255,0.15); transform: scale(1.05); }
+
+.admin-nav-right { display: flex; align-items: center; }
+.dark-mode .theme-toggle-btn { color: #888; }
 .admin-nav-logo { font-family: var(--font-display); font-size: 20px; color: var(--white); display: flex; align-items: center; gap: 10px; }
 .admin-nav-logo span { font-size: 11px; font-family: var(--font-body); letter-spacing: 0.16em; text-transform: uppercase; color: var(--gold-light); padding: 3px 10px; border: 1px solid var(--gold); border-radius: 100px; }
 .admin-nav-link { font-size: 13px; color: var(--gray-light); transition: var(--transition); }

@@ -18,12 +18,34 @@ const saveBtnText   = document.getElementById('saveBtnText')
 const saveSpinner   = document.getElementById('saveSpinner')
 const cancelEditBtn = document.getElementById('cancelEditBtn')
 
+// ── Tema (Dark Mode Default) ──────────────────────────────────
+function initTheme() {
+  const saved = localStorage.getItem('admin-theme')
+  // Se não tem salvo, ou o salvo é 'dark', aplica dark-mode
+  if (!saved || saved === 'dark') {
+    document.body.classList.add('dark-mode')
+    document.getElementById('themeToggle').textContent = '☀️'
+  } else {
+    document.body.classList.remove('dark-mode')
+    document.getElementById('themeToggle').textContent = '🌙'
+  }
+}
+
+function toggleTheme() {
+  const isDark = document.body.classList.toggle('dark-mode')
+  localStorage.setItem('admin-theme', isDark ? 'dark' : 'light')
+  document.getElementById('themeToggle').textContent = isDark ? '☀️' : '🌙'
+}
+
 // ── Init ─────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', async () => {
+  initTheme()
   configurarSlots()
   await carregarCategoriasETipos()
   carregarPecasAdmin()
   carregarRelatorio(7)
+
+  document.getElementById('themeToggle').addEventListener('click', toggleTheme)
 })
 
 // ── Slots de foto ─────────────────────────────────────────────
