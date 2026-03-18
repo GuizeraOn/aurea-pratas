@@ -58,16 +58,19 @@ function verificarSessao() {
 // ── Tema (Dark Mode Default) ──────────────────────────────────
 function initTheme() {
   const saved = localStorage.getItem('admin-theme')
-  const logo = document.getElementById('adminLogo')
+  const adminLogo = document.getElementById('adminLogo')
+  const loginLogo = document.getElementById('loginLogo')
   
   if (!saved || saved === 'dark') {
     document.body.classList.add('dark-mode')
     document.getElementById('themeToggle').textContent = '☀️'
-    if (logo) logo.src = 'assets/logo-dark.png'
+    if (adminLogo) adminLogo.src = 'assets/logo-dark.png'
+    if (loginLogo) loginLogo.src = 'assets/logo-white.png'
   } else {
     document.body.classList.remove('dark-mode')
     document.getElementById('themeToggle').textContent = '🌙'
-    if (logo) logo.src = 'assets/logo-white.png'
+    if (adminLogo) adminLogo.src = 'assets/logo-white.png'
+    if (loginLogo) loginLogo.src = 'assets/logo-dark.png'
   }
 }
 
@@ -76,9 +79,15 @@ function toggleTheme() {
   localStorage.setItem('admin-theme', isDark ? 'dark' : 'light')
   document.getElementById('themeToggle').textContent = isDark ? '☀️' : '🌙'
   
-  const logo = document.getElementById('adminLogo')
-  if (logo) {
-    logo.src = isDark ? 'assets/logo-dark.png' : 'assets/logo-white.png'
+  const adminLogo = document.getElementById('adminLogo')
+  const loginLogo = document.getElementById('loginLogo')
+  
+  if (isDark) {
+    if (adminLogo) adminLogo.src = 'assets/logo-dark.png'
+    if (loginLogo) loginLogo.src = 'assets/logo-white.png'
+  } else {
+    if (adminLogo) adminLogo.src = 'assets/logo-white.png'
+    if (loginLogo) loginLogo.src = 'assets/logo-dark.png'
   }
 }
 
