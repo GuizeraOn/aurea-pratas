@@ -41,9 +41,17 @@
   <!-- ── BUSCA E FILTROS ── -->
   <div class="collection-controls">
     <div class="search-container">
-      <div class="search-box">
-        <input type="text" id="searchInput" placeholder="O que você está procurando?" 
-               style="width:100%; padding:14px 20px; border-radius:100px; border:1px solid var(--gray-light); background:var(--white); font-size:14px; box-shadow:var(--shadow);" />
+      <div class="search-row">
+        <div class="search-box">
+          <input type="text" id="searchInput" placeholder="O que você está procurando?" 
+                 style="width:100%; padding:14px 20px; border-radius:100px; border:1px solid var(--gray-light); background:var(--white); font-size:14px; box-shadow:var(--shadow);" />
+        </div>
+        <select id="sortSelect" class="sort-select">
+          <option value="recentes">Mais recentes</option>
+          <option value="menor-preco">Menor preço</option>
+          <option value="maior-preco">Maior preço</option>
+          <option value="vendidos">Mais vendidos</option>
+        </select>
       </div>
     </div>
     <div class="filters-wrap">

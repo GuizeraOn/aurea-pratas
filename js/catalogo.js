@@ -54,6 +54,9 @@ document.addEventListener('DOMContentLoaded', () => {
     buscaAtiva = e.target.value.toLowerCase().trim()
     renderGrid()
   })
+  document.getElementById('sortSelect').addEventListener('change', () => {
+    renderGrid()
+  })
 
   // Sincronizar com navegação do navegador
   window.addEventListener('popstate', (e) => {
@@ -134,6 +137,15 @@ function renderGrid() {
     filtradas = filtradas.filter(p => p.nome.toLowerCase().includes(buscaAtiva))
   }
 
+  const sortVal = document.getElementById('sortSelect').value
+  filtradas.sort((a, b) => {
+    if (sortVal === 'menor-preco') return a.preco - b.preco
+    if (sortVal === 'maior-preco') return b.preco - a.preco
+    if (sortVal === 'vendidos') return (b.vendas || 0) - (a.vendas || 0)
+    // Padrão: Mais recentes (created_at desc)
+    return new Date(b.created_at) - new Date(a.created_at)
+  })
+
   if (filtradas.length === 0) {
     grid.innerHTML = `
       <div class="empty-state">
@@ -159,6 +171,7 @@ function limparFiltros() {
   catAtiva = 'todos'
   buscaAtiva = ''
   document.getElementById('searchInput').value = ''
+  document.getElementById('sortSelect').value = 'recentes'
   document.querySelectorAll('#filtersContainer .filter-btn').forEach(btn => {
     btn.classList.toggle('active', btn.dataset.cat === 'todos')
   })
@@ -527,6 +540,9 @@ function fecharCarrinho() {
 function finalizarWhatsapp() {
   if (!carrinho.length) return
   
+  // Incrementar vendas no banco (sem travar o fluxo do usuário)
+  incrementarVendas()
+  
   const linhas = carrinho.map(p => {
     const label = p.variacoesLabel ? ` (${p.variacoesLabel})` : ''
     const itemInfo = p.quantidade > 1 
@@ -548,6 +564,19 @@ function finalizarWhatsapp() {
   ].join('\n')
 
   window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(msg)}`, '_blank')
+}
+
+async function incrementarVendas() {
+  // Fazemos o update para cada item do carrinho
+  for (const item of carrinho) {
+    try {
+      const { data: p } = await db.from('pecas').select('vendas').eq('id', item.id).single()
+      const novasVendas = (p?.vendas || 0) + item.quantidade
+      await db.from('pecas').update({ vendas: novasVendas }).eq('id', item.id)
+    } catch (err) {
+      console.warn('Erro ao incrementar vendas para peça:', item.id, err)
+    }
+  }
 }
 
 // ── Tracking ──────────────────────────────────────────────────
