@@ -64,14 +64,14 @@ async function selecionarFoto(idx, file) {
     const kb1     = (antes / 1024).toFixed(0)
     const kb2     = (webpFile.size / 1024).toFixed(0)
     const economia = Math.round((1 - webpFile.size / antes) * 100)
-    if (economia > 5) showToast(`Foto otimizada! ${kb1}KB → ${kb2}KB $(-${economia}%)`, 'success')
+    if (economia > 5) showToast(`Foto otimizada! ${kb1}KB → ${kb2}KB (-${economia}%)`, 'success')
 
     const reader = new FileReader()
     reader.onload = e => mostrarPreview(idx, e.target.result)
     reader.readAsDataURL(webpFile)
   } catch (err) {
-    console.error(err)
-    showToast('Erro ao comprimir imagem', 'error')
+    console.error('ERRO COMPRESSÃO:', err)
+    showToast('Erro ao processar imagem. Tente outra.', 'error')
   }
 }
 
@@ -396,23 +396,16 @@ async function salvarPeca() {
   const editingId = document.getElementById('editingId').value
 
   // QC Validation
-  let hasError = false
-  Object.values(inputs).forEach(el => el.classList.remove('input-error'))
-
-  if (!nome)      { inputs.nome.classList.add('input-error'); hasError = true }
-  if (!categoria) { inputs.categoria.classList.add('input-error'); hasError = true }
-  if (isNaN(preco) || preco <= 0) { inputs.preco.classList.add('input-error'); hasError = true }
-
-  if (hasError) {
-    showToast('Preencha os campos obrigatórios (*).', 'error')
-    Object.values(inputs).forEach(el => {
-      el.oninput = () => el.classList.remove('input-error')
-      if (el.tagName === 'SELECT') el.onchange = () => el.classList.remove('input-error')
-    })
-    return
-  }
-
+  if (!nome)      { inputs.nome.classList.add('input-error'); inputs.nome.focus(); return showToast('Informe o nome da peça.', 'error') }
+  if (!categoria) { inputs.categoria.classList.add('input-error'); return showToast('Selecione uma categoria.', 'error') }
+  if (isNaN(preco) || preco <= 0) { inputs.preco.classList.add('input-error'); return showToast('Informe um preço válido.', 'error') }
   if (!editingId && !fotosArquivos[0]) return showToast('Adicione pelo menos a foto principal.', 'error')
+
+  // Clear errors on input
+  Object.values(inputs).forEach(el => {
+    el.oninput = () => el.classList.remove('input-error')
+    if (el.tagName === 'SELECT') el.onchange = () => el.classList.remove('input-error')
+  })
 
   const estoque = estoqueVal !== '' ? parseInt(estoqueVal) : null
 
@@ -670,9 +663,11 @@ function setBtnLoading(on) {
 }
 
 function showToast(msg, tipo = '') {
-  toastEl.textContent = msg
-  toastEl.className   = `toast ${tipo} show`
-  setTimeout(() => toastEl.classList.remove('show'), 2800)
+  const el = document.getElementById('toast')
+  if (!el) return
+  el.textContent = msg
+  el.className   = `toast ${tipo} show`
+  setTimeout(() => el.classList.remove('show'), 2800)
 }
 
 async function atualizarEstoqueBanco(id, valor) {

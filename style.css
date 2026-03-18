@@ -81,8 +81,23 @@ input, select, textarea { font-family: var(--font-body); font-size: 14px; outlin
 .hero-divider { width: 48px; height: 1px; background: var(--gold-light); margin: 28px auto 0; }
 
 /* ── Filtros ── */
-.filters-wrap { max-width: 1200px; margin: 0 auto; padding: 0 24px 32px; }
-.filters { display: flex; gap: 8px; flex-wrap: wrap; }
+.filters-wrap { 
+  max-width: 1200px; margin: 0 auto; padding: 0 24px 32px; 
+}
+.filters { 
+  display: flex; gap: 8px; flex-wrap: wrap; 
+}
+
+@media (max-width: 768px) {
+  .filters-wrap {
+    padding-left: 16px; padding-right: 0;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .filters-wrap::-webkit-scrollbar { display: none; }
+  .filters { flex-wrap: nowrap; padding-right: 16px; }
+}
 .filter-btn {
   padding: 8px 20px; border-radius: 100px;
   border: 1.5px solid var(--gray-light); background: var(--white);
