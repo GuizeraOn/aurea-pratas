@@ -107,6 +107,17 @@
     </div>
   </div>
 
+  <!-- ── BARRA FLUTUANTE DO CARRINHO ── -->
+  <div class="cart-floating-bar hidden" id="cartFloatingBar" onclick="abrirCarrinho()">
+    <div class="cart-floating-info">
+      <span class="cart-floating-icon">🛒</span>
+      <span id="cartFloatingQty">0 peças</span>
+      <span class="cart-floating-divider"></span>
+      <span id="cartFloatingTotal">R$ 0,00</span>
+    </div>
+    <button class="cart-floating-btn">REVISAR LISTA</button>
+  </div>
+
   <!-- ── SCRIPTS ── -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="js/config.js"></script>

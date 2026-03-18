@@ -165,8 +165,15 @@ async function criarCategoria() {
 }
 
 async function excluirCategoria(id) {
-  const emUso = todasPecasAdmin.some(p => p.categoria === id)
-  if (emUso) { showToast('Não é possível excluir categoria em uso.', 'error'); return }
+  // Verifica primeiro no banco (mais robusto)
+  const { count, error: countErr } = await db.from('pecas').select('id', { count: 'exact', head: true }).eq('categoria', id)
+  if (countErr) { showToast('Erro ao validar categoria.', 'error'); return }
+  
+  if (count > 0) { 
+    showToast(`Não é possível excluir. Existem ${count} peças nesta categoria.`, 'error')
+    return 
+  }
+  
   if (!confirm('Deletar essa categoria?')) return
   const { error } = await db.from('categorias').delete().eq('id', id)
   if (!error) { showToast('Deletada!', 'success'); await carregarCategoriasETipos() }

@@ -44,17 +44,24 @@ document.addEventListener('DOMContentLoaded', () => {
 // ── Carregar ──────────────────────────────────────────────────
 async function carregarPecas() {
   try {
-    const [resPecas, resCat, resTipos, resVars] = await Promise.all([
+    const [resPecas, resCat, resTipos] = await Promise.all([
       db.from('pecas').select('*').eq('visivel', true).or('estoque.gt.0,estoque.is.null').order('created_at', { ascending: false }),
       db.from('categorias').select('*').order('ordem'),
-      db.from('tipos_variacao').select('*').order('nome'),
-      db.from('variacoes_peca').select('*')
+      db.from('tipos_variacao').select('*').order('nome')
     ])
     if (resPecas.error) throw resPecas.error
     todasPecas = resPecas.data || []
     todasCategorias = resCat.data || []
     todosTiposVar = resTipos.data || []
-    todasVariacoes = resVars.data || []
+
+    // Busca variações apenas das peças carregadas
+    const { data: varsData, error: varsError } = await db
+      .from('variacoes_peca')
+      .select('*, tipos_variacao(nome)')
+      .in('peca_id', todasPecas.map(p => p.id))
+    
+    if (varsError) console.warn('Erro ao carregar variações:', varsError)
+    todasVariacoes = varsData || []
     
     renderFiltros()
     renderGrid()
@@ -366,8 +373,22 @@ function alterarQuantidade(carrinhoChave, delta) {
 
 function atualizarContadorCarrinho() {
   const n = carrinho.reduce((s, c) => s + c.quantidade, 0)
+  const total = carrinho.reduce((s, p) => s + p.preco * p.quantidade, 0)
+  
   cartCountEl.textContent = n
   cartCountEl.classList.toggle('hidden', n === 0)
+
+  // Barra Flutuante
+  const floatingBar = document.getElementById('cartFloatingBar')
+  if (floatingBar) {
+    if (n > 0) {
+      floatingBar.classList.remove('hidden')
+      document.getElementById('cartFloatingQty').textContent = `${n} ${n === 1 ? 'peça' : 'peças'}`
+      document.getElementById('cartFloatingTotal').textContent = formatarPreco(total)
+    } else {
+      floatingBar.classList.add('hidden')
+    }
+  }
 }
 
 function renderCarrinho() {
