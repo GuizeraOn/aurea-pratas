@@ -136,16 +136,6 @@ function cardHTML(peca) {
 
   const varsPeca = todasVariacoes.filter(v => v.peca_id === peca.id)
   const temVariaveis = varsPeca.length > 0
-  let chipsHTML = ''
-  if (temVariaveis) {
-    const porTipo = {}
-    varsPeca.forEach(v => { if (!porTipo[v.tipo_variacao_id]) porTipo[v.tipo_variacao_id] = []; porTipo[v.tipo_variacao_id].push(v) })
-    chipsHTML = Object.values(porTipo).map(variaveis => {
-      return `<div style="display:flex; gap:4px; margin-top:6px; flex-wrap:wrap;">` + 
-        variaveis.map(v => `<span style="font-size:10px; padding:2px 6px; border-radius:4px; background:var(--bg); border:1px solid var(--gray-light); color:${v.disponivel?'inherit':'#bbb'}; text-decoration:${v.disponivel?'none':'line-through'}">${v.valor}</span>`).join('') + 
-        `</div>`
-    }).join('')
-  }
 
   const dotsHTML = fotos.length > 1 ? `<div class="card-dots">${fotos.map((_,i) => `<div class="card-dot ${i===0?'active':''}" data-i="${i}"></div>`).join('')}</div>` : ''
   const carouselBtns = fotos.length > 1 ? `<button class="card-carousel-btn prev" onclick="carouselCard(event,'${peca.id}',-1)">‹</button><button class="card-carousel-btn next" onclick="carouselCard(event,'${peca.id}',1)">›</button>` : ''
@@ -174,7 +164,6 @@ function cardHTML(peca) {
       <div class="card-info" onclick="abrirModal('${peca.id}')" style="cursor:pointer">
         <div class="card-name">${peca.nome}</div>
         <div class="card-price">${formatarPreco(peca.preco)}</div>
-        ${chipsHTML}
       </div>
     </article>`
 }
