@@ -8,6 +8,7 @@ let todosTiposVar = []
 let todasVariacoes = []
 let carrinho   = []   // [{ ...peca, variacoesLabel: 'P | Prata', carrinhoChave: 'id-hash', quantidade: N }]
 let catAtiva   = 'todos'
+let buscaAtiva = ''
 
 let modalAtivoSelecoes = {}
 let modalAtivoVariantesGrupos = 0
@@ -39,10 +40,15 @@ document.addEventListener('DOMContentLoaded', () => {
     catAtiva = btn.dataset.cat
     renderGrid()
   })
+  document.getElementById('searchInput').addEventListener('input', e => {
+    buscaAtiva = e.target.value.toLowerCase().trim()
+    renderGrid()
+  })
 })
 
 // ── Carregar ──────────────────────────────────────────────────
 async function carregarPecas() {
+  renderSkeletons()
   try {
     const [resPecas, resCat, resTipos] = await Promise.all([
       db.from('pecas').select('*').eq('visivel', true).or('estoque.gt.0,estoque.is.null').order('created_at', { ascending: false }),
@@ -79,20 +85,37 @@ function renderFiltros() {
 
 // ── Grid ──────────────────────────────────────────────────────
 function renderGrid() {
-  const filtradas = catAtiva === 'todos' ? todasPecas : todasPecas.filter(p => p.categoria === catAtiva)
+  let filtradas = catAtiva === 'todos' ? todasPecas : todasPecas.filter(p => p.categoria === catAtiva)
+  
+  if (buscaAtiva) {
+    filtradas = filtradas.filter(p => p.nome.toLowerCase().includes(buscaAtiva))
+  }
+
   if (filtradas.length === 0) {
     grid.innerHTML = `
       <div class="empty-state">
-        <p>Nenhuma peça encontrada nesta categoria no momento.</p>
-        <button class="empty-state-btn" onclick="limparFiltros()">Limpar Filtros e Ver Tudo</button>
+        <p>${buscaAtiva ? 'Nenhuma peça encontrada para sua busca.' : 'Nenhuma peça encontrada nesta categoria no momento.'}</p>
+        <button class="empty-state-btn" onclick="limparFiltros()">Limpar Tudo e Ver Tudo</button>
       </div>`
     return
   }
   grid.innerHTML = filtradas.map(p => cardHTML(p)).join('')
 }
 
+function renderSkeletons() {
+  grid.innerHTML = Array(8).fill(0).map(() => `
+    <div class="skeleton-card">
+      <div class="skeleton-img"></div>
+      <div class="skeleton-line" style="width: 70%;"></div>
+      <div class="skeleton-line" style="width: 40%;"></div>
+    </div>
+  `).join('')
+}
+
 function limparFiltros() {
   catAtiva = 'todos'
+  buscaAtiva = ''
+  document.getElementById('searchInput').value = ''
   document.querySelectorAll('#filtersContainer .filter-btn').forEach(btn => {
     btn.classList.toggle('active', btn.dataset.cat === 'todos')
   })

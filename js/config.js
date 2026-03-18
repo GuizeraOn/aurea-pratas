@@ -8,7 +8,7 @@ const SUPABASE_KEY  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFz
 
 // Número do WhatsApp da dona (com DDI e DDD, sem espaços ou traços)
 // Exemplo: 5531999990000  → 55 (Brasil) + 31 (BH) + número
-const WHATSAPP_NUMBER = '55XXXXXXXXXXX'  // ← TROQUE PELO NÚMERO DELA
+const WHATSAPP_NUMBER = '5531999400016'
 
 // Nome do bucket de fotos no Supabase Storage
 const STORAGE_BUCKET = 'fotos-pecas'

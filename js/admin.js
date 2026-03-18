@@ -150,6 +150,9 @@ async function carregarCategoriasETipos() {
   atualizarFiltrosAdmin()
   preencherSelectCategoria()
   renderVariacoesSelector()
+
+  const statCats = document.getElementById('statCats')
+  if (statCats) statCats.textContent = categorias.length
 }
 
 // Categorias CRUD
@@ -632,7 +635,7 @@ async function carregarRelatorio(dias) {
         </div>`
     }).join('')
   } catch (err) {
-    console.error(err)
+    console.error('ERRO RELATÓRIO:', JSON.stringify(err))
     container.innerHTML = `
       <div style="text-align:center; padding:48px; color:var(--gray-mid);">
         <p style="font-family:var(--font-display); font-size:18px; color:var(--dark); margin-bottom:8px;">Relatório temporariamente indisponível</p>
