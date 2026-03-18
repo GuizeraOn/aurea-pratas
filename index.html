@@ -122,13 +122,21 @@
 
   <!-- ── BARRA FLUTUANTE DO CARRINHO ── -->
   <div class="cart-floating-bar hidden" id="cartFloatingBar" onclick="abrirCarrinho()">
-    <div class="cart-floating-info">
-      <span class="cart-floating-icon">🛒</span>
-      <span id="cartFloatingQty">0 peças</span>
-      <span class="cart-floating-divider"></span>
-      <span id="cartFloatingTotal">R$ 0,00</span>
+    <div class="cart-floating-content">
+      <div class="cart-floating-left">
+        <div class="cart-floating-icon-wrap">
+          <svg class="bag-icon" viewBox="0 0 24 24"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+        </div>
+        <span id="cartFloatingQty">0 peças</span>
+      </div>
+      
+      <span class="cart-floating-dot">•</span>
+      
+      <div class="cart-floating-right">
+        <span id="cartFloatingTotal">R$ 0,00</span>
+        <svg class="chevron-up" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"></polyline></svg>
+      </div>
     </div>
-    <button class="cart-floating-btn">REVISAR LISTA</button>
   </div>
 
   <!-- ── SCRIPTS ── -->

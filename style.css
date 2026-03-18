@@ -596,21 +596,80 @@ input, select, textarea { font-family: var(--font-body); font-size: 14px; outlin
 
 /* ── Barra Flutuante ── */
 .cart-floating-bar {
-  position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
-  width: calc(100% - 32px); max-width: 500px; z-index: 1000;
-  background: var(--dark); color: var(--white);
-  padding: 12px 18px; border-radius: 12px;
-  display: flex; align-items: center; justify-content: space-between;
-  box-shadow: 0 8px 24px rgba(0,0,0,0.25);
-  cursor: pointer; animation: slideUp 0.4s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: auto;
+  min-width: 260px;
+  max-width: calc(100% - 40px);
+  z-index: 1000;
+  background: #3F2E2A; /* Tom marrom premium que remete à imagem enviada */
+  color: var(--white);
+  padding: 10px 24px;
+  border-radius: 100px; /* Estilo 'pílula' igual à imagem */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 12px 32px rgba(0,0,0,0.3);
+  cursor: pointer;
+  animation: slideUp 0.5s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+  border: 1px solid rgba(255,255,255,0.1);
+  transition: transform 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
 }
+
+.cart-floating-bar:hover {
+  transform: translateX(-50%) translateY(-3px);
+  background: #4A352D;
+  box-shadow: 0 16px 40px rgba(0,0,0,0.35);
+}
+
 .cart-floating-bar.hidden { display: none; }
-.cart-floating-info { display: flex; align-items: center; gap: 10px; font-size: 14px; font-weight: 600; }
-.cart-floating-divider { width: 1px; height: 16px; background: rgba(255,255,255,0.2); }
-.cart-floating-btn {
-  background: var(--accent); color: var(--white);
-  border: none; padding: 8px 16px; border-radius: 8px;
-  font-size: 12px; font-weight: 700; letter-spacing: 0.05em;
+
+.cart-floating-content {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+  justify-content: center;
+}
+
+.cart-floating-left, .cart-floating-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.cart-floating-icon-wrap {
+  display: flex;
+  align-items: center;
+}
+
+.bag-icon {
+  width: 18px;
+  height: 18px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 2;
+}
+
+#cartFloatingQty, #cartFloatingTotal {
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+}
+
+.cart-floating-dot {
+  color: rgba(255,255,255,0.3);
+  font-size: 14px;
+}
+
+.chevron-up {
+  width: 14px;
+  height: 14px;
+  opacity: 0.9;
+  margin-left: 2px;
 }
 
 @keyframes slideUp {
@@ -619,9 +678,14 @@ input, select, textarea { font-family: var(--font-body); font-size: 14px; outlin
 }
 
 @media (max-width: 768px) {
-  .cart-floating-bar { bottom: 16px; width: calc(100% - 24px); padding: 10px 14px; }
-  .cart-floating-info { font-size: 13px; }
-  .cart-floating-btn { padding: 6px 12px; font-size: 11px; }
+  .cart-floating-bar {
+    bottom: 20px;
+    padding: 12px 22px;
+    min-width: 240px;
+  }
+  #cartFloatingQty, #cartFloatingTotal {
+    font-size: 14px;
+  }
 }
 
 /* ── Skeletons ── */

@@ -461,7 +461,7 @@ function atualizarContadorCarrinho() {
   if (floatingBar) {
     if (n > 0 && !isDrawerOpen) {
       floatingBar.classList.remove('hidden')
-      document.getElementById('cartFloatingQty').textContent = `${n} ${n === 1 ? 'peça' : 'peças'}`
+      document.getElementById('cartFloatingQty').textContent = `${n} ${n === 1 ? 'item' : 'itens'}`
       document.getElementById('cartFloatingTotal').textContent = formatarPreco(total)
     } else {
       floatingBar.classList.add('hidden')
