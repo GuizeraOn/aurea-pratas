@@ -483,13 +483,27 @@ function fecharCarrinho() {
 // ── WhatsApp ──────────────────────────────────────────────────
 function finalizarWhatsapp() {
   if (!carrinho.length) return
-  const linhas = carrinho.map(p =>
-    p.quantidade > 1
-      ? `• ${p.nome} ${p.variacoesLabel?`(${p.variacoesLabel})`:''} × ${p.quantidade} — ${formatarPreco(p.preco * p.quantidade)}`
-      : `• ${p.nome} ${p.variacoesLabel?`(${p.variacoesLabel})`:''} — ${formatarPreco(p.preco)}`
-  )
+  
+  const linhas = carrinho.map(p => {
+    const label = p.variacoesLabel ? ` (${p.variacoesLabel})` : ''
+    const itemInfo = p.quantidade > 1 
+      ? `${p.nome}${label} × ${p.quantidade} — ${formatarPreco(p.preco * p.quantidade)}`
+      : `${p.nome}${label} — ${formatarPreco(p.preco)}`
+    return `- ${itemInfo}`
+  })
+
   const total = carrinho.reduce((s, p) => s + p.preco * p.quantidade, 0)
-  const msg = ['Olá! Vi o catálogo e adorei essas peças 😍','', ...linhas,'',`*Total estimado: ${formatarPreco(total)}*`,'','Estão disponíveis? 🙏'].join('\n')
+  
+  const msg = [
+    'Olá! Gostaria de saber mais sobre as peças abaixo:',
+    '',
+    ...linhas,
+    '',
+    `Total: ${formatarPreco(total)}`,
+    '',
+    'Poderia confirmar disponibilidade e prazo? Obrigada!'
+  ].join('\n')
+
   window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(msg)}`, '_blank')
 }
 
