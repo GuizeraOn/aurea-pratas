@@ -3,10 +3,15 @@
 // ============================================================
 
 let todasPecas = []
-let carrinho   = []   // [{ ...peca, quantidade: N }]
+let todasCategorias = []
+let todosTiposVar = []
+let todasVariacoes = []
+let carrinho   = []   // [{ ...peca, variacoesLabel: 'P | Prata', carrinhoChave: 'id-hash', quantidade: N }]
 let catAtiva   = 'todos'
 
-const CATEGORIAS = { aneis:'Anéis', colares:'Colares', brincos:'Brincos', pulseiras:'Pulseiras' }
+let modalAtivoSelecoes = {}
+let modalAtivoVariantesGrupos = 0
+
 const SETE_DIAS  = 7 * 24 * 60 * 60 * 1000
 
 // ── Elementos ────────────────────────────────────────────────
@@ -39,13 +44,30 @@ document.addEventListener('DOMContentLoaded', () => {
 // ── Carregar ──────────────────────────────────────────────────
 async function carregarPecas() {
   try {
-    const { data, error } = await db.from('pecas').select('*').eq('visivel', true).or('estoque.gt.0,estoque.is.null').order('created_at', { ascending: false })
-    if (error) throw error
-    todasPecas = data || []
+    const [resPecas, resCat, resTipos, resVars] = await Promise.all([
+      db.from('pecas').select('*').eq('visivel', true).or('estoque.gt.0,estoque.is.null').order('created_at', { ascending: false }),
+      db.from('categorias').select('*').order('ordem'),
+      db.from('tipos_variacao').select('*').order('nome'),
+      db.from('variacoes_peca').select('*')
+    ])
+    if (resPecas.error) throw resPecas.error
+    todasPecas = resPecas.data || []
+    todasCategorias = resCat.data || []
+    todosTiposVar = resTipos.data || []
+    todasVariacoes = resVars.data || []
+    
+    renderFiltros()
     renderGrid()
-  } catch {
+  } catch(e) {
     grid.innerHTML = `<div class="empty-state"><p>Erro ao carregar o catálogo. Tente recarregar a página.</p></div>`
   }
+}
+
+function renderFiltros() {
+  const container = document.getElementById('filtersContainer')
+  if (!container) return
+  container.innerHTML = `<button class="filter-btn ${catAtiva==='todos'?'active':''}" data-cat="todos">Todos</button>` + 
+    todasCategorias.map(c => `<button class="filter-btn ${catAtiva===c.id?'active':''}" data-cat="${c.id}">${c.nome}</button>`).join('')
 }
 
 // ── Grid ──────────────────────────────────────────────────────
@@ -61,49 +83,63 @@ function renderGrid() {
 // ── Card HTML ─────────────────────────────────────────────────
 function cardHTML(peca) {
   const noCarrinho = carrinho.some(c => c.id === peca.id)
-  const catLabel   = CATEGORIAS[peca.categoria] || peca.categoria
+  const catObj     = todasCategorias.find(c => c.id === peca.categoria)
+  const catLabel   = catObj ? catObj.nome : 'Sem Categoria'
   const isNova     = (Date.now() - new Date(peca.created_at).getTime()) < SETE_DIAS
   const esgotada   = peca.estoque != null && peca.estoque === 0
   const poucasUn   = peca.estoque != null && peca.estoque > 0 && peca.estoque <= 3
 
-  // Fotos disponíveis
-  const fotos = [peca.foto_path, peca.foto_2, peca.foto_3, peca.foto_4]
-    .filter(Boolean)
-    .map(p => fotoPublica(p))
+  const fotos = [peca.foto_path, peca.foto_2, peca.foto_3, peca.foto_4].filter(Boolean).map(p => fotoPublica(p))
   const fotoAtual = fotos[0] || 'https://placehold.co/400x400/e8e8e4/888?text=Foto'
 
-  const dotsHTML = fotos.length > 1
-    ? `<div class="card-dots">${fotos.map((_,i) => `<div class="card-dot ${i===0?'active':''}" data-i="${i}"></div>`).join('')}</div>`
-    : ''
+  const varsPeca = todasVariacoes.filter(v => v.peca_id === peca.id)
+  const temVariaveis = varsPeca.length > 0
+  let chipsHTML = ''
+  if (temVariaveis) {
+    const porTipo = {}
+    varsPeca.forEach(v => { if (!porTipo[v.tipo_variacao_id]) porTipo[v.tipo_variacao_id] = []; porTipo[v.tipo_variacao_id].push(v) })
+    chipsHTML = Object.values(porTipo).map(variaveis => {
+      return `<div style="display:flex; gap:4px; margin-top:6px; flex-wrap:wrap;">` + 
+        variaveis.map(v => `<span style="font-size:10px; padding:2px 6px; border-radius:4px; background:var(--bg); border:1px solid var(--gray-light); color:${v.disponivel?'inherit':'#bbb'}; text-decoration:${v.disponivel?'none':'line-through'}">${v.valor}</span>`).join('') + 
+        `</div>`
+    }).join('')
+  }
 
-  const carouselBtns = fotos.length > 1
-    ? `<button class="card-carousel-btn prev" onclick="carouselCard(event,'${peca.id}',-1)">‹</button>
-       <button class="card-carousel-btn next" onclick="carouselCard(event,'${peca.id}',1)">›</button>`
-    : ''
+  const dotsHTML = fotos.length > 1 ? `<div class="card-dots">${fotos.map((_,i) => `<div class="card-dot ${i===0?'active':''}" data-i="${i}"></div>`).join('')}</div>` : ''
+  const carouselBtns = fotos.length > 1 ? `<button class="card-carousel-btn prev" onclick="carouselCard(event,'${peca.id}',-1)">‹</button><button class="card-carousel-btn next" onclick="carouselCard(event,'${peca.id}',1)">›</button>` : ''
+
+  let cartBtnHTML = ''
+  if (!esgotada) {
+    if (temVariaveis) {
+      cartBtnHTML = `<button class="card-add-btn" onclick="clickCardAdd(event,'${peca.id}')" style="font-size:11px; padding:6px 10px; width:auto; height:auto; border-radius:100px;">Opções</button>`
+    } else {
+      cartBtnHTML = `<button class="card-add-btn ${noCarrinho?'added':''}" onclick="toggleCarrinhoSimples(event,'${peca.id}')" title="${noCarrinho?'Remover':'Adicionar'}">${noCarrinho ? iconeCheck() : iconePlus()}</button>`
+    }
+  }
 
   return `
     <article class="product-card" data-id="${peca.id}" data-foto-idx="0" data-fotos='${JSON.stringify(fotos)}'>
       <div class="card-img-wrap" onclick="abrirModal('${peca.id}')">
-        <img id="card-img-${peca.id}" src="${fotoAtual}" alt="${peca.nome}" loading="lazy"
-          onerror="this.src='https://placehold.co/400x400/e8e8e4/888?text=Foto'" />
+        <img id="card-img-${peca.id}" src="${fotoAtual}" alt="${peca.nome}" loading="lazy" onerror="this.src='https://placehold.co/400x400/e8e8e4/888?text=Foto'" />
         <span class="card-badge">${catLabel}</span>
         ${isNova ? '<span class="badge-new">✦ Novo</span>' : ''}
         ${poucasUn ? '<div class="badge-low">⚠️ Últimas unidades!</div>' : ''}
         ${esgotada ? '<div class="badge-out">Esgotada</div>' : ''}
         ${carouselBtns}
         ${dotsHTML}
-        ${!esgotada ? `
-        <button class="card-add-btn ${noCarrinho?'added':''}"
-          onclick="toggleCarrinho(event,'${peca.id}')"
-          title="${noCarrinho?'Remover da lista':'Adicionar à lista'}">
-          ${noCarrinho ? iconeCheck() : iconePlus()}
-        </button>` : ''}
+        ${cartBtnHTML}
       </div>
       <div class="card-info" onclick="abrirModal('${peca.id}')" style="cursor:pointer">
         <div class="card-name">${peca.nome}</div>
         <div class="card-price">${formatarPreco(peca.preco)}</div>
+        ${chipsHTML}
       </div>
     </article>`
+}
+
+function clickCardAdd(e, id) {
+  e.stopPropagation()
+  abrirModal(id)
 }
 
 // ── Carrossel no card ─────────────────────────────────────────
@@ -124,19 +160,42 @@ function abrirModal(id) {
   const peca = todasPecas.find(p => p.id === id)
   if (!peca) return
 
-  const fotos = [peca.foto_path, peca.foto_2, peca.foto_3, peca.foto_4]
-    .filter(Boolean).map(p => fotoPublica(p))
+  modalAtivoSelecoes = {}
+  
+  const fotos = [peca.foto_path, peca.foto_2, peca.foto_3, peca.foto_4].filter(Boolean).map(p => fotoPublica(p))
   if (!fotos.length) fotos.push('https://placehold.co/600x600/e8e8e4/888?text=Foto')
 
-  let fotoIdx = 0
-  const noCarrinho = carrinho.some(c => c.id === peca.id)
   const esgotada   = peca.estoque != null && peca.estoque === 0
-  const catLabel   = CATEGORIAS[peca.categoria] || peca.categoria
+  const catObj     = todasCategorias.find(c => c.id === peca.categoria)
+  const catLabel   = catObj ? catObj.nome : 'Sem Categoria'
 
   const estoqueHTML = peca.estoque == null ? ''
     : peca.estoque === 0 ? `<div class="modal-estoque low">❌ Esgotada</div>`
     : peca.estoque <= 3  ? `<div class="modal-estoque low">⚠️ Últimas ${peca.estoque} unidades!</div>`
     : `<div class="modal-estoque ok">✅ Em estoque (${peca.estoque} un.)</div>`
+
+  const varsPeca = todasVariacoes.filter(v => v.peca_id === id)
+  let variacaoHTML = ''
+  modalAtivoVariantesGrupos = 0
+  if (varsPeca.length > 0) {
+    const porTipo = {}
+    varsPeca.forEach(v => { if (!porTipo[v.tipo_variacao_id]) porTipo[v.tipo_variacao_id] = []; porTipo[v.tipo_variacao_id].push(v) })
+    modalAtivoVariantesGrupos = Object.keys(porTipo).length
+    
+    variacaoHTML = Object.entries(porTipo).map(([tId, variaveis]) => {
+      const tObj = todosTiposVar.find(t => t.id === tId)
+      const chips = variaveis.map(v => {
+        if (!v.disponivel) return `<button class="var-chip esgotado" disabled>${v.valor}</button>`
+        return `<button class="var-chip" id="chip_${v.id}" onclick="selecionarVariacaoModal('${tId}', '${v.id}', '${v.valor}')">${v.valor}</button>`
+      }).join('')
+      return `
+        <div style="margin-top:16px;">
+          <div style="font-size:12px;text-transform:uppercase;letter-spacing:0.1em;color:var(--gray-dark);margin-bottom:8px;font-weight:600">${tObj?tObj.nome:'Opções'}</div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">${chips}</div>
+        </div>
+      `
+    }).join('')
+  }
 
   const thumbsHTML = fotos.length > 1
     ? fotos.map((f,i) => `<img class="modal-thumb ${i===0?'active':''}" src="${f}" data-i="${i}" onclick="trocarFotoModal(${i})" />`).join('')
@@ -170,11 +229,12 @@ function abrirModal(id) {
           <div class="modal-name">${peca.nome}</div>
           <div class="modal-price">${formatarPreco(peca.preco)}</div>
           <div class="modal-divider"></div>
-          <div class="modal-desc">${peca.descricao || 'Peça em prata 925, acabamento polido de alta qualidade.'}</div>
+          <div class="modal-desc">${peca.descricao || 'Peça em prata, acabamento polido de alta qualidade.'}</div>
           ${estoqueHTML}
+          ${variacaoHTML}
           ${!esgotada ? `
-          <button class="modal-add-btn ${noCarrinho?'added':''}" id="modalAddBtn" onclick="toggleCarrinhoModal('${peca.id}')">
-            ${noCarrinho ? '✓ Na sua lista' : '+ Adicionar à lista'}
+          <button class="modal-add-btn" id="modalAddBtn" onclick="tentarAdicionarAoCarrinho('${peca.id}')">
+            + Adicionar à lista
           </button>` : `<div style="margin-top:24px;text-align:center;color:var(--red);font-weight:600">Peça esgotada</div>`}
         </div>
       </div>
@@ -235,40 +295,70 @@ function fecharModal() {
   setTimeout(() => { overlay.remove(); document.body.style.overflow = '' }, 300)
 }
 
-function toggleCarrinhoModal(id) {
-  toggleCarrinho(null, id)
-  const btn = document.getElementById('modalAddBtn')
-  if (btn) {
-    const noCarrinho = carrinho.some(c => c.id === id)
-    btn.textContent = noCarrinho ? '✓ Na sua lista' : '+ Adicionar à lista'
-    btn.classList.toggle('added', noCarrinho)
+function selecionarVariacaoModal(tId, vId, vValor) {
+  modalAtivoSelecoes[tId] = { id: vId, valor: vValor }
+  document.querySelectorAll(`button[onclick^="selecionarVariacaoModal('${tId}'"]`).forEach(b => b.classList.remove('active'))
+  document.getElementById(`chip_${vId}`).classList.add('active')
+}
+
+function tentarAdicionarAoCarrinho(pecaId) {
+  if (Object.keys(modalAtivoSelecoes).length < modalAtivoVariantesGrupos) {
+    showToast('Selecione uma opção de cada variação!', 'error')
+    return
   }
+  adicionarHashAoCarrinho(pecaId, modalAtivoSelecoes)
+  fecharModal()
 }
 
 // ── Carrinho ──────────────────────────────────────────────────
-function toggleCarrinho(e, id) {
+function toggleCarrinhoSimples(e, id) {
   if (e) e.stopPropagation()
-  const peca = todasPecas.find(p => p.id === id)
-  if (!peca) return
-
-  const idx = carrinho.findIndex(c => c.id === id)
+  const idx = carrinho.findIndex(c => c.id === id && !c.variacoesLabel)
   if (idx === -1) {
-    carrinho.push({ ...peca, quantidade: 1 })
-    showToast(`"${peca.nome}" adicionado ✓`, 'success')
-    registrarEvento(id, 'adicionou')
+    adicionarHashAoCarrinho(id, {})
   } else {
-    carrinho.splice(idx, 1)
-    showToast(`"${peca.nome}" removido`)
-    registrarEvento(id, 'removeu')
+    removerDoCarrinhoHash(`${id}-`)
   }
+}
 
+function adicionarHashAoCarrinho(pecaId, selecoesObj) {
+  const peca = todasPecas.find(p => p.id === pecaId)
+  if (!peca) return
+  
+  const hashObj = selecoesObj || {}
+  const variacoesString = Object.entries(hashObj).sort((a,b)=>a[0].localeCompare(b[0])).map(x => x[1].valor).join(' | ')
+  const carrinhoChave = pecaId + '-' + variacoesString
+  
+  const idx = carrinho.findIndex(c => c.carrinhoChave === carrinhoChave)
+  if (idx === -1) {
+    carrinho.push({ ...peca, variacoesLabel: variacoesString, carrinhoChave, quantidade: 1 })
+    showToast(`"${peca.nome}" adicionado ✓`, 'success')
+    registrarEvento(pecaId, 'adicionou')
+  } else {
+    carrinho[idx].quantidade += 1
+    showToast(`Mais 1 un. de "${peca.nome}" adicionada ✓`, 'success')
+  }
+  
   atualizarContadorCarrinho()
   renderGrid()
   renderCarrinho()
 }
 
-function alterarQuantidade(id, delta) {
-  const item = carrinho.find(c => c.id === id)
+function removerDoCarrinhoHash(carrinhoChave) {
+  const idx = carrinho.findIndex(c => c.carrinhoChave === carrinhoChave)
+  if (idx > -1) {
+    const p = carrinho[idx]
+    carrinho.splice(idx, 1)
+    showToast(`"${p.nome}" removido`)
+    registrarEvento(p.id, 'removeu')
+    atualizarContadorCarrinho()
+    renderGrid()
+    renderCarrinho()
+  }
+}
+
+function alterarQuantidade(carrinhoChave, delta) {
+  const item = carrinho.find(c => c.carrinhoChave === carrinhoChave)
   if (!item) return
   item.quantidade = Math.max(1, item.quantidade + delta)
   renderCarrinho()
@@ -297,14 +387,15 @@ function renderCarrinho() {
         onerror="this.src='https://placehold.co/64x64/e8e8e4/888?text=?'" />
       <div class="cart-item-info">
         <div class="cart-item-name">${peca.nome}</div>
+        ${peca.variacoesLabel ? `<div style="font-size:11px;color:var(--gray-dark);margin-top:2px;font-weight:600">${peca.variacoesLabel}</div>` : ''}
         <div class="cart-item-price">${formatarPreco(peca.preco)} × ${peca.quantidade} = ${formatarPreco(peca.preco * peca.quantidade)}</div>
         <div class="cart-item-qty">
-          <button class="qty-btn" onclick="alterarQuantidade('${peca.id}',-1)">−</button>
+          <button class="qty-btn" onclick="alterarQuantidade('${peca.carrinhoChave}',-1)">−</button>
           <span class="qty-value">${peca.quantidade}</span>
-          <button class="qty-btn" onclick="alterarQuantidade('${peca.id}',1)">+</button>
+          <button class="qty-btn" onclick="alterarQuantidade('${peca.carrinhoChave}',1)">+</button>
         </div>
       </div>
-      <button class="cart-item-remove" onclick="toggleCarrinho(null,'${peca.id}')" title="Remover">
+      <button class="cart-item-remove" onclick="removerDoCarrinhoHash('${peca.carrinhoChave}')" title="Remover">
         <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
       </button>
     </div>`).join('')
@@ -323,8 +414,8 @@ function finalizarWhatsapp() {
   if (!carrinho.length) return
   const linhas = carrinho.map(p =>
     p.quantidade > 1
-      ? `• ${p.nome} × ${p.quantidade} — ${formatarPreco(p.preco * p.quantidade)}`
-      : `• ${p.nome} — ${formatarPreco(p.preco)}`
+      ? `• ${p.nome} ${p.variacoesLabel?`(${p.variacoesLabel})`:''} × ${p.quantidade} — ${formatarPreco(p.preco * p.quantidade)}`
+      : `• ${p.nome} ${p.variacoesLabel?`(${p.variacoesLabel})`:''} — ${formatarPreco(p.preco)}`
   )
   const total = carrinho.reduce((s, p) => s + p.preco * p.quantidade, 0)
   const msg = ['Olá! Vi o catálogo e adorei essas peças 😍','', ...linhas,'',`*Total estimado: ${formatarPreco(total)}*`,'','Estão disponíveis? 🙏'].join('\n')

@@ -41,6 +41,46 @@
       </div>
     </div>
 
+    <!-- Categorias -->
+    <section class="admin-section">
+      <div class="section-title">Categorias</div>
+      <div class="form-row" style="margin-bottom:16px; align-items:flex-end;">
+        <div class="form-group">
+          <label>Nova Categoria</label>
+          <input type="text" id="novaCatNome" placeholder="Ex: Tornozeleiras" />
+        </div>
+        <button class="btn-primary" onclick="criarCategoria()" style="height:42px; width:max-content;">Adicionar</button>
+      </div>
+      <div class="admin-table-wrap">
+        <table class="admin-table">
+          <thead><tr><th>Nome</th><th>Slug</th><th>Ações</th></tr></thead>
+          <tbody id="adminCatTable"><tr><td colspan="3">Carregando...</td></tr></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Tipos de Variação -->
+    <section class="admin-section">
+      <div class="section-title">Tipos de Variação</div>
+      <div class="form-row three" style="margin-bottom:16px; align-items:flex-end;">
+        <div class="form-group">
+          <label>Novo Tipo</label>
+          <input type="text" id="novoTipoNome" placeholder="Ex: Tamanho" />
+        </div>
+        <div class="form-group">
+          <label>Presets (separados por vírgula)</label>
+          <input type="text" id="novoTipoPresets" placeholder="Ex: P, M, G" />
+        </div>
+        <button class="btn-primary" onclick="criarTipoVariacao()" style="height:42px; width:max-content;">Adicionar</button>
+      </div>
+      <div class="admin-table-wrap">
+        <table class="admin-table">
+          <thead><tr><th>Nome</th><th>Presets</th><th>Ações</th></tr></thead>
+          <tbody id="adminTipoVarTable"><tr><td colspan="3">Carregando...</td></tr></tbody>
+        </table>
+      </div>
+    </section>
+
     <!-- Formulário -->
     <section class="admin-section">
       <div class="section-title" id="formTitle">Cadastrar Nova Peça</div>
@@ -63,11 +103,7 @@
         <div class="form-group">
           <label for="inputCategoria">Categoria *</label>
           <select id="inputCategoria">
-            <option value="">Selecione...</option>
-            <option value="aneis">Anéis</option>
-            <option value="colares">Colares</option>
-            <option value="brincos">Brincos</option>
-            <option value="pulseiras">Pulseiras</option>
+            <option value="">Carregando...</option>
           </select>
         </div>
         <div class="form-group">
@@ -87,6 +123,19 @@
         </div>
       </div>
 
+      <div class="form-group" style="margin-top:20px; border-top:1px solid var(--gray-light); padding-top:20px; margin-bottom:24px;">
+        <label style="font-size:16px; font-weight:600; color:var(--dark); margin-bottom:4px;">Variações da Peça (Opcional)</label>
+        <p style="font-size:12px; color:var(--gray-mid); margin-bottom:12px;">Ative os tipos de variação (como Tamanho ou Cor) e adicione os valores para esta peça.</p>
+        
+        <div id="variacoesTiposSelector" style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:16px;">
+          <!-- Checkboxes dos Tipos Vêm via JS -->
+        </div>
+
+        <div id="variacoesAtivasContainer" style="display:flex; flex-direction:column; gap:16px;">
+          <!-- Caixas dos Tipos Ativos Vêm via JS -->
+        </div>
+      </div>
+
       <input type="hidden" id="editingId" value="" />
 
       <div style="display:flex;gap:12px;flex-wrap:wrap">
@@ -101,12 +150,9 @@
     <!-- Tabela -->
     <section class="admin-section">
       <div class="section-title">Peças Cadastradas</div>
-      <div style="display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap">
+      <div id="filtrosAdminGrid" style="display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap">
         <button class="filter-btn active" data-admin-cat="todos" onclick="filtrarAdmin(this)">Todos</button>
-        <button class="filter-btn" data-admin-cat="aneis" onclick="filtrarAdmin(this)">Anéis</button>
-        <button class="filter-btn" data-admin-cat="colares" onclick="filtrarAdmin(this)">Colares</button>
-        <button class="filter-btn" data-admin-cat="brincos" onclick="filtrarAdmin(this)">Brincos</button>
-        <button class="filter-btn" data-admin-cat="pulseiras" onclick="filtrarAdmin(this)">Pulseiras</button>
+        <!-- Filtros injetados via JS -->
       </div>
       <div class="admin-table-wrap">
         <table class="admin-table">

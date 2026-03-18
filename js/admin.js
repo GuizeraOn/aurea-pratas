@@ -4,10 +4,12 @@
 
 let todasPecasAdmin = []
 let filtroAdminCat  = 'todos'
-let fotosArquivos   = [null, null, null, null]   // até 4 fotos
-let fotosExistentes = ['', '', '', '']           // paths já salvos (edição)
+let fotosArquivos   = [null, null, null, null]
+let fotosExistentes = ['', '', '', '']
 
-const CATEGORIAS = { aneis:'Anéis', colares:'Colares', brincos:'Brincos', pulseiras:'Pulseiras' }
+let categorias = []
+let tiposVariacao = []
+let pecaVariacoes = {} // { tipo_id: [ { valor: 'P', disponivel: true, id: uuid } ] }
 
 const toastEl       = document.getElementById('toast')
 const tableBody     = document.getElementById('adminTableBody')
@@ -17,8 +19,9 @@ const saveSpinner   = document.getElementById('saveSpinner')
 const cancelEditBtn = document.getElementById('cancelEditBtn')
 
 // ── Init ─────────────────────────────────────────────────────
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
   configurarSlots()
+  await carregarCategoriasETipos()
   carregarPecasAdmin()
   carregarRelatorio(7)
 })
@@ -133,6 +136,157 @@ function removerFoto(idx) {
   document.getElementById(`photoInput${idx}`).value = ''
 }
 
+// ── Dados Dynamicos (Categorias e Tipos) ──────────────────────
+async function carregarCategoriasETipos() {
+  const [resCat, resTipos] = await Promise.all([
+    db.from('categorias').select('*').order('ordem'),
+    db.from('tipos_variacao').select('*').order('nome')
+  ])
+  if (!resCat.error) categorias = resCat.data || []
+  if (!resTipos.error) tiposVariacao = resTipos.data || []
+  
+  renderCategorias()
+  renderTiposVariacao()
+  atualizarFiltrosAdmin()
+  preencherSelectCategoria()
+  renderVariacoesSelector()
+}
+
+// Categorias CRUD
+async function criarCategoria() {
+  const input = document.getElementById('novaCatNome')
+  const nome = input.value.trim()
+  if (!nome) return
+  const slug = nome.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '')
+  const ordem = categorias.length + 1
+  const { error } = await db.from('categorias').insert([{ nome, slug, ordem }])
+  if (!error) { showToast('Categoria criada!', 'success'); input.value=''; await carregarCategoriasETipos() }
+  else showToast('Erro ao criar.', 'error')
+}
+
+async function excluirCategoria(id) {
+  const emUso = todasPecasAdmin.some(p => p.categoria === id)
+  if (emUso) { showToast('Não é possível excluir categoria em uso.', 'error'); return }
+  if (!confirm('Deletar essa categoria?')) return
+  const { error } = await db.from('categorias').delete().eq('id', id)
+  if (!error) { showToast('Deletada!', 'success'); await carregarCategoriasETipos() }
+}
+
+function renderCategorias() {
+  const tbody = document.getElementById('adminCatTable')
+  if (!tbody) return
+  if (!categorias.length) { tbody.innerHTML = `<tr><td colspan="3" style="text-align:center;color:#888;padding:16px;">Nenhuma categoria</td></tr>`; return }
+  tbody.innerHTML = categorias.map(c => `<tr><td>${c.nome}</td><td>${c.slug}</td><td><button class="action-btn delete" onclick="excluirCategoria('${c.id}')">Excluir</button></td></tr>`).join('')
+}
+
+// Tipos Variacao CRUD
+async function criarTipoVariacao() {
+  const input = document.getElementById('novoTipoNome')
+  const inputPre = document.getElementById('novoTipoPresets')
+  const nome = input.value.trim()
+  const presets = inputPre.value.split(',').map(s=>s.trim()).filter(Boolean)
+  if (!nome) return
+  const { error } = await db.from('tipos_variacao').insert([{ nome, presets }])
+  if (!error) { showToast('Tipo criado!', 'success'); input.value=''; inputPre.value=''; await carregarCategoriasETipos() }
+}
+
+async function excluirTipoVariacao(id) {
+  if (!confirm('Deletar tipo de variação? Vai apagar de todas as peças!')) return
+  const { error } = await db.from('tipos_variacao').delete().eq('id', id)
+  if (!error) { showToast('Deletado!', 'success'); await carregarCategoriasETipos() }
+}
+
+function renderTiposVariacao() {
+  const tbody = document.getElementById('adminTipoVarTable')
+  if (!tbody) return
+  if (!tiposVariacao.length) { tbody.innerHTML = `<tr><td colspan="3" style="text-align:center;color:#888;padding:16px;">Nenhum tipo criado</td></tr>`; return }
+  tbody.innerHTML = tiposVariacao.map(t => `<tr><td>${t.nome}</td><td>${(t.presets||[]).join(', ')}</td><td><button class="action-btn delete" onclick="excluirTipoVariacao('${t.id}')">Excluir</button></td></tr>`).join('')
+}
+
+function atualizarFiltrosAdmin() {
+  const wrap = document.getElementById('filtrosAdminGrid')
+  if(!wrap) return
+  wrap.innerHTML = `<button class="filter-btn ${filtroAdminCat==='todos'?'active':''}" data-admin-cat="todos" onclick="filtrarAdmin(this)">Todos</button>` +
+    categorias.map(c => `<button class="filter-btn ${filtroAdminCat===c.id?'active':''}" data-admin-cat="${c.id}" onclick="filtrarAdmin(this)">${c.nome}</button>`).join('')
+}
+
+function preencherSelectCategoria() {
+  const sel = document.getElementById('inputCategoria')
+  if (!sel) return
+  const currentVal = sel.value
+  sel.innerHTML = `<option value="">Selecione...</option>` + categorias.map(c => `<option value="${c.id}">${c.nome}</option>`).join('')
+  if (categorias.find(c => c.id === currentVal)) sel.value = currentVal
+}
+
+// Variações de Peça Form Logic
+function renderVariacoesSelector() {
+  const container = document.getElementById('variacoesTiposSelector')
+  if (!container) return
+  container.innerHTML = tiposVariacao.map(t => `
+    <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;background:var(--white);padding:6px 12px;border-radius:100px;border:1px solid var(--gray-light)">
+      <input type="checkbox" onchange="toggleTipoVariacao('${t.id}', this.checked)" ${pecaVariacoes[t.id] ? 'checked' : ''} />
+      ${t.nome}
+    </label>
+  `).join('')
+  renderVariacoesAtivas()
+}
+
+function toggleTipoVariacao(id, isChecked) {
+  if (isChecked) { if (!pecaVariacoes[id]) pecaVariacoes[id] = [] }
+  else { delete pecaVariacoes[id] }
+  renderVariacoesAtivas()
+}
+
+function renderVariacoesAtivas() {
+  const container = document.getElementById('variacoesAtivasContainer')
+  if (!container) return
+  container.innerHTML = Object.entries(pecaVariacoes).map(([tipo_id, vals]) => {
+    const t = tiposVariacao.find(x => x.id === tipo_id)
+    if (!t) return ''
+    
+    const presetsHTML = (t.presets || []).map(p => `<span style="font-size:11px;background:#eee;padding:4px 8px;border-radius:4px;cursor:pointer" onclick="addVariacaoValor('${t.id}', '${p.replace(/'/g,"\\'")}')">+ ${p}</span>`).join(' ')
+    const activeHTML = vals.map((v, i) => `
+      <div style="display:flex;align-items:center;justify-content:space-between;background:var(--bg);padding:8px 12px;border-radius:6px;border:1px solid var(--gray-light);margin-bottom:6px;">
+        <span style="font-weight:500;font-size:13px;text-decoration:${v.disponivel?'none':'line-through'};color:${v.disponivel?'var(--dark)':'var(--red)'}">${v.valor}</span>
+        <div style="display:flex;gap:8px;">
+           <button type="button" class="action-btn" onclick="toggleDisponibilidade('${t.id}', ${i})">${v.disponivel?'Ativo':'Esgotado'}</button>
+           <button type="button" class="action-btn delete" onclick="removerVariacaoValor('${t.id}', ${i})">✕</button>
+        </div>
+      </div>`).join('')
+
+    return `
+      <div style="border:1px solid var(--gray-light);border-radius:8px;padding:16px;">
+        <h4 style="margin-top:0;margin-bottom:12px;font-size:14px;">${t.nome}</h4>
+        <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">${presetsHTML}</div>
+        <div style="display:flex;gap:8px;margin-bottom:12px;">
+          <input type="text" id="customVar_${t.id}" placeholder="Valor customizado" style="padding:6px;border:1px solid #ccc;border-radius:4px;flex:1"/>
+          <button type="button" class="btn-secondary" style="padding:6px 16px;" onclick="addVariacaoValorCustom('${t.id}')">Adicionar</button>
+        </div>
+        <div>${activeHTML}</div>
+      </div>`
+  }).join('')
+}
+
+function addVariacaoValor(tipo_id, valor) {
+  if (!pecaVariacoes[tipo_id].find(v => v.valor === valor)) {
+    pecaVariacoes[tipo_id].push({ valor, disponivel: true })
+    renderVariacoesAtivas()
+  }
+}
+function addVariacaoValorCustom(tipo_id) {
+  const input = document.getElementById(`customVar_${tipo_id}`)
+  const valor = input.value.trim()
+  if (valor) { addVariacaoValor(tipo_id, valor); input.value = '' }
+}
+function toggleDisponibilidade(tipo_id, index) {
+  pecaVariacoes[tipo_id][index].disponivel = !pecaVariacoes[tipo_id][index].disponivel
+  renderVariacoesAtivas()
+}
+function removerVariacaoValor(tipo_id, index) {
+  pecaVariacoes[tipo_id].splice(index, 1)
+  renderVariacoesAtivas()
+}
+
 // ── Carregar peças ────────────────────────────────────────────
 async function carregarPecasAdmin() {
   try {
@@ -153,6 +307,8 @@ function atualizarStats() {
   document.getElementById('statTotal').textContent   = total
   document.getElementById('statVisible').textContent = visiveis
   document.getElementById('statHidden').textContent  = total - visiveis
+  const statCat = document.getElementById('statCat')
+  if(statCat) statCat.textContent = categorias.length
 }
 
 // ── Tabela ────────────────────────────────────────────────────
@@ -168,7 +324,7 @@ function renderTabela() {
 
   tableBody.innerHTML = lista.map(peca => {
     const foto     = fotoPublicaAdmin(peca.foto_path)
-    const catLabel = CATEGORIAS[peca.categoria] || peca.categoria
+    const catLabel = categorias.find(c => c.id === peca.categoria)?.nome || 'Sem categoria'
     const statusCls= peca.visivel ? 'visible' : 'hidden-product'
     const statusTxt= peca.visivel ? '● Visível' : '○ Oculta'
     const estoque  = peca.estoque != null
@@ -239,14 +395,29 @@ async function salvarPeca() {
       foto_4:    paths[3] || null,
     }
 
+    let resultPeca
     if (editingId) {
-      const { error } = await db.from('pecas').update(payload).eq('id', editingId)
+      const { data, error } = await db.from('pecas').update(payload).eq('id', editingId).select()
       if (error) throw error
+      resultPeca = data[0]
       showToast('Peça atualizada! ✓', 'success')
+      await db.from('variacoes_peca').delete().eq('peca_id', resultPeca.id)
     } else {
-      const { error } = await db.from('pecas').insert([{ ...payload, visivel: true }])
+      const { data, error } = await db.from('pecas').insert([{ ...payload, visivel: true }]).select()
       if (error) throw error
+      resultPeca = data[0]
       showToast('Peça cadastrada! ✓', 'success')
+    }
+
+    // Insert new variations
+    const variacoesInsert = []
+    Object.entries(pecaVariacoes).forEach(([tipo_id, vals]) => {
+      vals.forEach(v => {
+        variacoesInsert.push({ peca_id: resultPeca.id, tipo_variacao_id: tipo_id, valor: v.valor, disponivel: v.disponivel })
+      })
+    })
+    if (variacoesInsert.length > 0) {
+      await db.from('variacoes_peca').insert(variacoesInsert)
     }
 
     limparFormulario()
@@ -260,7 +431,7 @@ async function salvarPeca() {
 }
 
 // ── Editar ────────────────────────────────────────────────────
-function editarPeca(id) {
+async function editarPeca(id) {
   const p = todasPecasAdmin.find(p => p.id === id)
   if (!p) return
 
@@ -309,6 +480,18 @@ function editarPeca(id) {
   document.getElementById('formTitle').textContent = '✏️ Editando Peça'
   saveBtnText.textContent = 'Salvar Alterações'
   cancelEditBtn.classList.remove('hidden')
+
+  // Fetch variations
+  const { data: vars } = await db.from('variacoes_peca').select('*').eq('peca_id', id)
+  pecaVariacoes = {}
+  if (vars) {
+    vars.forEach(v => {
+      if (!pecaVariacoes[v.tipo_variacao_id]) pecaVariacoes[v.tipo_variacao_id] = []
+      pecaVariacoes[v.tipo_variacao_id].push({ valor: v.valor, disponivel: v.disponivel, id: v.id })
+    })
+  }
+  renderVariacoesSelector()
+
   document.querySelector('.admin-section').scrollIntoView({ behavior: 'smooth' })
 }
 
@@ -323,10 +506,14 @@ function limparFormulario() {
   for (let i = 0; i < 4; i++) removerFoto(i)
   document.getElementById('formTitle').textContent = 'Cadastrar Nova Peça'
   saveBtnText.textContent = 'Cadastrar Peça'
+  cancelEditBtn.classList.remove('hidden')
   cancelEditBtn.classList.add('hidden')
   
   const toggleBtn = document.getElementById('btnToggleEsgotado')
   if (toggleBtn) toggleBtn.style.display = 'none'
+
+  pecaVariacoes = {}
+  renderVariacoesSelector()
 }
 
 // ── Toggle visível ────────────────────────────────────────────
