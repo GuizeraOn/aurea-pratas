@@ -25,7 +25,11 @@
 }
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-html { scroll-behavior: smooth; overflow-x: hidden; }
+html, body {
+  overflow-x: hidden;
+  max-width: 100%;
+  width: 100%;
+}
 body {
   font-family: var(--font-body);
   background: var(--bg);
@@ -33,8 +37,6 @@ body {
   font-size: 15px;
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
-  overflow-x: hidden;
-  max-width: 100vw;
 }
 a { color: inherit; text-decoration: none; }
 img { display: block; width: 100%; object-fit: cover; }
@@ -84,7 +86,19 @@ input, select, textarea { font-family: var(--font-body); font-size: 14px; outlin
 
 /* ── Filtros ── */
 .filters-wrap { 
-  max-width: 1200px; margin: 0 auto; padding: 0 24px 32px; 
+  max-width: 100vw;
+  width: 100%;
+  margin: 0 auto;
+  padding: 0 24px 32px;
+  overflow-x: scroll;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  position: relative;
+  isolation: isolate;
+}
+.filters-wrap::-webkit-scrollbar {
+  display: none;
 }
 .filters { 
   display: flex; gap: 8px; flex-wrap: wrap; 
@@ -92,14 +106,9 @@ input, select, textarea { font-family: var(--font-body); font-size: 14px; outlin
 
 @media (max-width: 768px) {
   .filters-wrap {
-    overflow-x: auto;
-    overflow-y: visible;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: none;
-    max-width: 100%;
+    padding-bottom: 8px;
   }
-  .filters-wrap::-webkit-scrollbar { display: none; }
-  .filters { flex-wrap: nowrap; width: max-content; padding: 0 16px 8px; }
+  .filters { flex-wrap: nowrap; width: max-content; padding: 0 16px; }
 }
 .filter-btn {
   padding: 8px 20px; border-radius: 100px;
