@@ -68,9 +68,9 @@ input, select, textarea { font-family: var(--font-body); font-size: 14px; outlin
   height: 68px; display: flex; align-items: center; justify-content: space-between;
 }
 .logo { display: flex; align-items: center; }
-.logo-img { height: 36px; width: auto; transition: var(--transition); }
+.logo-img { height: 44px; width: auto; transition: var(--transition); }
 @media (max-width: 768px) {
-  .logo-img { height: 28px; }
+  .logo-img { height: 32px; }
 }
 
 .cart-btn {
@@ -381,9 +381,9 @@ input, select, textarea { font-family: var(--font-body); font-size: 14px; outlin
 .whatsapp-btn svg { width: 22px; height: 22px; fill: white; }
 
 /* ── Footer ── */
-.site-footer { border-top: 1px solid var(--gray-light); padding: 48px 24px; text-align: center; }
-.footer-logo-img { height: 48px; width: auto; margin-bottom: 16px; opacity: 0.9; }
-.footer-sub { font-size: 12px; color: var(--gray-mid); letter-spacing: 0.1em; text-transform: uppercase; }
+.site-footer { border-top: 1px solid var(--gray-light); padding: 48px 24px 64px; text-align: center; }
+.footer-logo-img { display: block; margin: 0 auto 16px; height: 64px; width: auto; opacity: 0.9; }
+.footer-sub { font-size: 13px; color: var(--gray-mid); letter-spacing: 0.1em; text-transform: uppercase; }
 
 /* ── Toast ── */
 .toast {
