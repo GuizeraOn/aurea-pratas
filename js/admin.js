@@ -411,7 +411,8 @@ async function salvarPeca() {
     categoria: document.getElementById('inputCategoria'),
     preco: document.getElementById('inputPreco'),
     estoque: document.getElementById('inputEstoque'),
-    desc: document.getElementById('inputDesc')
+    desc: document.getElementById('inputDesc'),
+    url: document.getElementById('inputImg')
   }
 
   const nome      = inputs.nome.value.trim()
@@ -419,13 +420,17 @@ async function salvarPeca() {
   const preco     = parseFloat(inputs.preco.value)
   const estoqueVal= inputs.estoque.value
   const descricao = inputs.desc.value.trim()
+  const fotoUrl   = inputs.url.value.trim()
   const editingId = document.getElementById('editingId').value
 
   // QC Validation
   if (!nome)      { inputs.nome.classList.add('input-error'); inputs.nome.focus(); return showToast('Informe o nome da peça.', 'error') }
   if (!categoria) { inputs.categoria.classList.add('input-error'); return showToast('Selecione uma categoria.', 'error') }
   if (isNaN(preco) || preco <= 0) { inputs.preco.classList.add('input-error'); return showToast('Informe um preço válido.', 'error') }
-  if (!editingId && !fotosArquivos[0]) return showToast('Adicione pelo menos a foto principal.', 'error')
+  
+  if (!editingId && !fotosArquivos[0] && !fotoUrl) {
+     return showToast('Adicione a foto principal ou uma URL.', 'error')
+  }
 
   // Clear errors on input
   Object.values(inputs).forEach(el => {
@@ -449,6 +454,11 @@ async function salvarPeca() {
 
     const resultados = await Promise.all(uploads)
     resultados.forEach((path, i) => { if (path) paths[i] = path })
+    
+    // Se tiver URL externa e não tiver foto nova/existente no slot 0, usa a URL
+    if (fotoUrl && !fotosArquivos[0] && !fotosExistentes[0]) {
+      paths[0] = fotoUrl
+    }
 
     const payload = {
       nome, categoria, preco, descricao, estoque,
@@ -483,6 +493,7 @@ async function salvarPeca() {
       await db.from('variacoes_peca').insert(variacoesInsert)
     }
 
+    inputs.url.value = ''
     limparFormulario()
     await carregarPecasAdmin()
   } catch (err) {
