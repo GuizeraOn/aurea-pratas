@@ -515,7 +515,13 @@ input, select, textarea { font-family: var(--font-body); font-size: 14px; outlin
 }
 .upload-icon { font-size: 22px; }
 .slot-label { font-size: 11px; color: var(--gray-mid); font-weight: 500; }
-.slot-preview { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.slot-preview { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: 2; }
+/* Safari iOS: garante que o input cobre a área mesmo com overflow:hidden */
+@supports (-webkit-touch-callout: none) {
+  .photo-slot input[type=file] {
+    font-size: 16px; /* evita zoom automático no iOS */
+  }
+}
 .slot-remove {
   position: absolute; top: 6px; right: 6px;
   width: 22px; height: 22px; border-radius: 50%;

@@ -199,10 +199,13 @@ function mostrarPreview(idx, src) {
   const preview = document.getElementById(`preview${idx}`)
   const remove  = document.getElementById(`remove${idx}`)
   const slot    = document.getElementById(`slot${idx}`)
+  const input   = document.getElementById(`photoInput${idx}`)
   preview.src = src
   preview.classList.remove('hidden')
   remove.classList.remove('hidden')
   slot.querySelector('.slot-placeholder').style.opacity = '0'
+  // Esconde o input quando tem foto — evita bloquear visualização
+  input.style.zIndex = '1'
 }
 
 function removerFoto(idx) {
@@ -211,11 +214,13 @@ function removerFoto(idx) {
   const preview = document.getElementById(`preview${idx}`)
   const remove  = document.getElementById(`remove${idx}`)
   const slot    = document.getElementById(`slot${idx}`)
+  const input   = document.getElementById(`photoInput${idx}`)
   preview.classList.add('hidden')
   preview.src = ''
   remove.classList.add('hidden')
   slot.querySelector('.slot-placeholder').style.opacity = '1'
-  document.getElementById(`photoInput${idx}`).value = ''
+  input.style.zIndex = '3'  // restaura input por cima pra permitir novo upload
+  input.value = ''
 }
 
 // ── Dados Dynamicos (Categorias e Tipos) ──────────────────────
