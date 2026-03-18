@@ -119,11 +119,6 @@ function configurarSlots() {
     const slot  = document.getElementById(`slot${i}`)
     const input = document.getElementById(`photoInput${i}`)
 
-    slot.addEventListener('click', (e) => {
-      if (e.target.classList.contains('slot-remove')) return
-      input.click()
-    })
-
     input.addEventListener('change', e => {
       const file = e.target.files[0]
       if (file) selecionarFoto(i, file)
