@@ -8,7 +8,6 @@
 </head>
 <body class="admin-body">
 
-  <!-- ── NAV ADMIN ── -->
   <nav class="admin-nav">
     <div class="admin-nav-logo">
       Áureas Prata
@@ -17,14 +16,13 @@
     <a class="admin-nav-link" href="index.html" target="_blank">Ver catálogo →</a>
   </nav>
 
-  <!-- ── CONTEÚDO PRINCIPAL ── -->
   <main class="admin-main">
 
     <h1 class="admin-title">Painel de Gestão</h1>
     <p class="admin-subtitle">Cadastre, edite e controle todas as suas peças.</p>
 
     <!-- Stats -->
-    <div class="admin-stats" id="adminStats">
+    <div class="admin-stats">
       <div class="stat-card">
         <div class="stat-label">Total de Peças</div>
         <div class="stat-value" id="statTotal">—</div>
@@ -39,38 +37,25 @@
       </div>
       <div class="stat-card">
         <div class="stat-label">Categorias</div>
-        <div class="stat-value" id="statCats">4</div>
+        <div class="stat-value">4</div>
       </div>
     </div>
 
-    <!-- ── FORMULÁRIO DE CADASTRO ── -->
+    <!-- Formulário -->
     <section class="admin-section">
       <div class="section-title" id="formTitle">Cadastrar Nova Peça</div>
 
-      <!-- Upload de foto -->
-      <div class="form-group" style="margin-bottom: 20px">
-        <label>Fotos da Peça (Até 4 fotos, a primeira será a principal)</label>
-        <div class="upload-grid" id="uploadGrid">
-          <div class="photo-slot" onclick="document.getElementById('photoInput0').click()" id="slot0">
-            <input type="file" id="photoInput0" accept="image/*" style="display:none" onchange="previewUpload(this, 0)" />
-            <div class="upload-icon">📸</div><div class="upload-text">Principal</div>
-          </div>
-          <div class="photo-slot" onclick="document.getElementById('photoInput1').click()" id="slot1">
-            <input type="file" id="photoInput1" accept="image/*" style="display:none" onchange="previewUpload(this, 1)" />
-            <div class="upload-icon">📸</div><div class="upload-text">Foto 2</div>
-          </div>
-          <div class="photo-slot" onclick="document.getElementById('photoInput2').click()" id="slot2">
-             <input type="file" id="photoInput2" accept="image/*" style="display:none" onchange="previewUpload(this, 2)" />
-             <div class="upload-icon">📸</div><div class="upload-text">Foto 3</div>
-          </div>
-          <div class="photo-slot" onclick="document.getElementById('photoInput3').click()" id="slot3">
-             <input type="file" id="photoInput3" accept="image/*" style="display:none" onchange="previewUpload(this, 3)" />
-             <div class="upload-icon">📸</div><div class="upload-text">Foto 4</div>
-          </div>
+      <div class="form-group" style="margin-bottom:20px">
+        <label>Fotos da Peça (até 4 — a primeira é a principal)</label>
+        <div class="photo-grid">
+          <div class="photo-slot" id="slot0"><input type="file" id="photoInput0" accept="image/*" /><div class="slot-placeholder"><span class="upload-icon">📸</span><span class="slot-label">Principal</span></div><img class="slot-preview hidden" id="preview0" alt="" /><button class="slot-remove hidden" id="remove0" type="button" onclick="removerFoto(0)">✕</button></div>
+          <div class="photo-slot" id="slot1"><input type="file" id="photoInput1" accept="image/*" /><div class="slot-placeholder"><span class="upload-icon">📸</span><span class="slot-label">Foto 2</span></div><img class="slot-preview hidden" id="preview1" alt="" /><button class="slot-remove hidden" id="remove1" type="button" onclick="removerFoto(1)">✕</button></div>
+          <div class="photo-slot" id="slot2"><input type="file" id="photoInput2" accept="image/*" /><div class="slot-placeholder"><span class="upload-icon">📸</span><span class="slot-label">Foto 3</span></div><img class="slot-preview hidden" id="preview2" alt="" /><button class="slot-remove hidden" id="remove2" type="button" onclick="removerFoto(2)">✕</button></div>
+          <div class="photo-slot" id="slot3"><input type="file" id="photoInput3" accept="image/*" /><div class="slot-placeholder"><span class="upload-icon">📸</span><span class="slot-label">Foto 4</span></div><img class="slot-preview hidden" id="preview3" alt="" /><button class="slot-remove hidden" id="remove3" type="button" onclick="removerFoto(3)">✕</button></div>
         </div>
       </div>
 
-      <div class="form-row four" style="margin-bottom:16px;">
+      <div class="form-row three" style="margin-bottom:16px">
         <div class="form-group">
           <label for="inputNome">Nome da Peça *</label>
           <input type="text" id="inputNome" placeholder="Ex: Anel Lua Crescente" />
@@ -89,20 +74,22 @@
           <label for="inputPreco">Preço (R$) *</label>
           <input type="number" id="inputPreco" placeholder="89.90" step="0.01" min="0" />
         </div>
-        <div class="form-group">
-          <label for="inputEstoque">Estoque</label>
-          <input type="number" id="inputEstoque" placeholder="Qtd" min="0" />
-        </div>
       </div>
 
-      <div class="form-group" style="margin-bottom: 20px">
-        <label for="inputDesc">Descrição (opcional)</label>
-        <textarea id="inputDesc" placeholder="Detalhe o material, tamanho, acabamento..."></textarea>
+      <div class="form-row" style="margin-bottom:16px">
+        <div class="form-group">
+          <label for="inputEstoque">Estoque (opcional)</label>
+          <input type="number" id="inputEstoque" placeholder="Deixe vazio se não controla" min="0" />
+        </div>
+        <div class="form-group">
+          <label for="inputDesc">Descrição (opcional)</label>
+          <input type="text" id="inputDesc" placeholder="Material, tamanho, acabamento..." />
+        </div>
       </div>
 
       <input type="hidden" id="editingId" value="" />
 
-      <div style="display:flex; gap:12px; flex-wrap:wrap">
+      <div style="display:flex;gap:12px;flex-wrap:wrap">
         <button class="btn-primary" id="saveBtn" onclick="salvarPeca()">
           <span id="saveBtnText">Cadastrar Peça</span>
           <span class="spinner hidden" id="saveSpinner"></span>
@@ -111,65 +98,48 @@
       </div>
     </section>
 
-    <!-- ── TABELA DE PEÇAS ── -->
+    <!-- Tabela -->
     <section class="admin-section">
       <div class="section-title">Peças Cadastradas</div>
-
-      <!-- Filtros rápidos na tabela -->
-      <div style="display:flex; gap:8px; margin-bottom:20px; flex-wrap:wrap">
+      <div style="display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap">
         <button class="filter-btn active" data-admin-cat="todos" onclick="filtrarAdmin(this)">Todos</button>
         <button class="filter-btn" data-admin-cat="aneis" onclick="filtrarAdmin(this)">Anéis</button>
         <button class="filter-btn" data-admin-cat="colares" onclick="filtrarAdmin(this)">Colares</button>
         <button class="filter-btn" data-admin-cat="brincos" onclick="filtrarAdmin(this)">Brincos</button>
         <button class="filter-btn" data-admin-cat="pulseiras" onclick="filtrarAdmin(this)">Pulseiras</button>
       </div>
-
       <div class="admin-table-wrap">
         <table class="admin-table">
           <thead>
             <tr>
-              <th>Foto</th>
-              <th>Nome</th>
-              <th>Categoria</th>
-              <th>Preço</th>
-              <th>Status</th>
-              <th>Ações</th>
+              <th>Foto</th><th>Nome</th><th>Categoria</th><th>Preço</th><th>Estoque</th><th>Status</th><th>Ações</th>
             </tr>
           </thead>
           <tbody id="adminTableBody">
-            <tr>
-              <td colspan="6" style="text-align:center; color:#888; padding:40px">
-                Carregando peças...
-              </td>
-            </tr>
+            <tr><td colspan="7" style="text-align:center;color:#888;padding:40px">Carregando peças...</td></tr>
           </tbody>
         </table>
       </div>
     </section>
 
-    <!-- ── RELATÓRIO ── -->
+    <!-- Relatório -->
     <section class="admin-section">
       <div class="section-title">Relatório de Peças Mais Adicionadas</div>
-      
-      <div class="report-filters">
-        <select id="reportFilter" onchange="carregarRelatorio()">
-          <option value="7">Últimos 7 dias</option>
-          <option value="30">Últimos 30 dias</option>
-          <option value="todos">Todos os tempos</option>
-        </select>
+      <div style="display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap">
+        <button class="filter-btn active" data-periodo="7"  onclick="filtrarRelatorio(this)">Últimos 7 dias</button>
+        <button class="filter-btn" data-periodo="30" onclick="filtrarRelatorio(this)">Últimos 30 dias</button>
+        <button class="filter-btn" data-periodo="0"  onclick="filtrarRelatorio(this)">Todos os tempos</button>
       </div>
-      
-      <div class="report-list" id="reportList">
-        <div style="color:var(--gray-mid); text-align:center; padding: 20px;">Carregando relatório...</div>
+      <div id="relatorioContainer">
+        <p style="color:#888;text-align:center;padding:32px">Carregando relatório...</p>
       </div>
     </section>
 
   </main>
 
-  <!-- ── TOAST ── -->
   <div class="toast" id="toast"></div>
 
-  <!-- ── SCRIPTS ── -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="js/config.js"></script>
   <script src="js/admin.js"></script>
 </body>

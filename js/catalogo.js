@@ -1,31 +1,25 @@
 // ============================================================
 //  ÁUREAS PRATA — js/catalogo.js
-//  Lógica do catálogo público
 // ============================================================
 
-// ── Estado ──────────────────────────────────────────────────
-let todasPecas  = []   // todos os produtos carregados
-let carrinho    = []   // itens selecionados
-let catAtiva    = 'todos'
+let todasPecas = []
+let carrinho   = []   // [{ ...peca, quantidade: N }]
+let catAtiva   = 'todos'
 
-const CATEGORIAS = {
-  aneis:     'Anéis',
-  colares:   'Colares',
-  brincos:   'Brincos',
-  pulseiras: 'Pulseiras',
-}
+const CATEGORIAS = { aneis:'Anéis', colares:'Colares', brincos:'Brincos', pulseiras:'Pulseiras' }
+const SETE_DIAS  = 7 * 24 * 60 * 60 * 1000
 
-// ── Elementos ───────────────────────────────────────────────
-const grid          = document.getElementById('catalogGrid')
-const cartCountEl   = document.getElementById('cartCount')
-const cartDrawer    = document.getElementById('cartDrawer')
-const cartOverlay   = document.getElementById('cartOverlay')
-const cartItemsEl   = document.getElementById('cartItems')
-const cartFooterEl  = document.getElementById('cartFooter')
-const cartTotalEl   = document.getElementById('cartTotal')
-const toastEl       = document.getElementById('toast')
+// ── Elementos ────────────────────────────────────────────────
+const grid         = document.getElementById('catalogGrid')
+const cartCountEl  = document.getElementById('cartCount')
+const cartDrawer   = document.getElementById('cartDrawer')
+const cartOverlay  = document.getElementById('cartOverlay')
+const cartItemsEl  = document.getElementById('cartItems')
+const cartFooterEl = document.getElementById('cartFooter')
+const cartTotalEl  = document.getElementById('cartTotal')
+const toastEl      = document.getElementById('toast')
 
-// ── Inicialização ────────────────────────────────────────────
+// ── Init ──────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
   carregarPecas()
   document.getElementById('cartOpenBtn').addEventListener('click', abrirCarrinho)
@@ -40,174 +34,233 @@ document.addEventListener('DOMContentLoaded', () => {
     catAtiva = btn.dataset.cat
     renderGrid()
   })
-
-  // Eventos do modal
-  document.getElementById('modalClose').addEventListener('click', fecharModal)
-  document.getElementById('productModal').addEventListener('click', (e) => {
-    if (e.target.id === 'productModal') fecharModal()
-  })
 })
 
-// ── Carregar produtos do Supabase ────────────────────────────
+// ── Carregar ──────────────────────────────────────────────────
 async function carregarPecas() {
   try {
-    const { data, error } = await db
-      .from('pecas')
-      .select('*')
-      .eq('visivel', true)
-      .order('created_at', { ascending: false })
-
+    const { data, error } = await db.from('pecas').select('*').eq('visivel', true).order('created_at', { ascending: false })
     if (error) throw error
     todasPecas = data || []
     renderGrid()
-  } catch (err) {
-    console.error('Erro ao carregar peças:', err)
-    grid.innerHTML = `
-      <div class="empty-state">
-        <p>Erro ao carregar o catálogo. Tente recarregar a página.</p>
-      </div>`
+  } catch {
+    grid.innerHTML = `<div class="empty-state"><p>Erro ao carregar o catálogo. Tente recarregar a página.</p></div>`
   }
 }
 
-// ── Renderizar grid ──────────────────────────────────────────
+// ── Grid ──────────────────────────────────────────────────────
 function renderGrid() {
-  const filtradas = catAtiva === 'todos'
-    ? todasPecas
-    : todasPecas.filter(p => p.categoria === catAtiva)
-
+  const filtradas = catAtiva === 'todos' ? todasPecas : todasPecas.filter(p => p.categoria === catAtiva)
   if (filtradas.length === 0) {
-    grid.innerHTML = `
-      <div class="empty-state">
-        <p>Nenhuma peça encontrada nessa categoria.</p>
-      </div>`
+    grid.innerHTML = `<div class="empty-state"><p>Nenhuma peça nessa categoria.</p></div>`
     return
   }
-
-  grid.innerHTML = filtradas.map(peca => cardHTML(peca)).join('')
+  grid.innerHTML = filtradas.map(p => cardHTML(p)).join('')
 }
 
-// ── HTML de um card de produto ───────────────────────────────
+// ── Card HTML ─────────────────────────────────────────────────
 function cardHTML(peca) {
   const noCarrinho = carrinho.some(c => c.id === peca.id)
-
-  const fotos = []
-  if (peca.foto_path) fotos.push(fotoPublica(peca.foto_path))
-  if (peca.foto_2) fotos.push(fotoPublica(peca.foto_2))
-  if (peca.foto_3) fotos.push(fotoPublica(peca.foto_3))
-  if (peca.foto_4) fotos.push(fotoPublica(peca.foto_4))
-  if (fotos.length === 0) fotos.push('https://placehold.co/400x400/e8e8e4/888?text=Foto')
-
   const catLabel   = CATEGORIAS[peca.categoria] || peca.categoria
-  const diasDesdeCriacao = (Date.now() - new Date(peca.created_at).getTime()) / (1000 * 60 * 60 * 24)
-  const isNovidade = diasDesdeCriacao < 7
-  
-  const isEsgotada = peca.estoque === 0
-  const isUltimas = peca.estoque !== null && peca.estoque <= 3 && peca.estoque > 0
+  const isNova     = (Date.now() - new Date(peca.created_at).getTime()) < SETE_DIAS
+  const esgotada   = peca.estoque != null && peca.estoque === 0
+  const poucasUn   = peca.estoque != null && peca.estoque > 0 && peca.estoque <= 3
 
-  let btnHTML = ''
-  if (isEsgotada) {
-    btnHTML = `<div class="badge-esgotada">Esgotada</div>`
-  } else {
-    btnHTML = `<button
-      class="card-add-btn ${noCarrinho ? 'added' : ''}"
-      onclick="toggleCarrinho(event, '${peca.id}')"
-      aria-label="${noCarrinho ? 'Remover da lista' : 'Adicionar à lista'}"
-      title="${noCarrinho ? 'Remover da lista' : 'Adicionar à lista'}"
-    >
-      ${noCarrinho ? iconeCheck() : iconePlus()}
-    </button>`
-  }
+  // Fotos disponíveis
+  const fotos = [peca.foto_path, peca.foto_2, peca.foto_3, peca.foto_4]
+    .filter(Boolean)
+    .map(p => fotoPublica(p))
+  const fotoAtual = fotos[0] || 'https://placehold.co/400x400/e8e8e4/888?text=Foto'
 
-  const fotosStr = encodeURIComponent(JSON.stringify(fotos))
-  let navCarouselHTML = ''
-  if (fotos.length > 1) {
-    navCarouselHTML = `
-      <div class="card-nav prev" onclick="trocarFoto(event, '${peca.id}', -1)">&#8249;</div>
-      <div class="card-nav next" onclick="trocarFoto(event, '${peca.id}', 1)">&#8250;</div>
-    `
-  }
+  const dotsHTML = fotos.length > 1
+    ? `<div class="card-dots">${fotos.map((_,i) => `<div class="card-dot ${i===0?'active':''}" data-i="${i}"></div>`).join('')}</div>`
+    : ''
+
+  const carouselBtns = fotos.length > 1
+    ? `<button class="card-carousel-btn prev" onclick="carouselCard(event,'${peca.id}',-1)">‹</button>
+       <button class="card-carousel-btn next" onclick="carouselCard(event,'${peca.id}',1)">›</button>`
+    : ''
 
   return `
-    <article class="product-card" data-id="${peca.id}" onclick="abrirModal('${peca.id}')">
-      <div class="card-img-wrap" data-fotos="${fotosStr}" data-foto-ativa="0">
-        <img
-          id="img-${peca.id}"
-          src="${fotos[0]}"
-          alt="${peca.nome}"
-          loading="lazy"
-        />
-        <div class="card-badges" style="position: absolute; top: 12px; left: 12px; display: flex; gap: 6px; z-index: 2;">
-          <span class="card-badge" style="position: static; margin: 0;">${catLabel}</span>
-          ${isNovidade ? '<span class="card-badge badge-novidade" style="position: static; margin: 0;">Novidade</span>' : ''}
-          ${isUltimas ? '<span class="card-badge badge-ultimas" style="position: static; margin: 0;">Últimas</span>' : ''}
-        </div>
-        ${navCarouselHTML}
-        ${btnHTML}
+    <article class="product-card" data-id="${peca.id}" data-foto-idx="0" data-fotos='${JSON.stringify(fotos)}'>
+      <div class="card-img-wrap" onclick="abrirModal('${peca.id}')">
+        <img id="card-img-${peca.id}" src="${fotoAtual}" alt="${peca.nome}" loading="lazy"
+          onerror="this.src='https://placehold.co/400x400/e8e8e4/888?text=Foto'" />
+        <span class="card-badge">${catLabel}</span>
+        ${isNova ? '<span class="badge-new">✦ Novo</span>' : ''}
+        ${poucasUn ? '<div class="badge-low">⚠️ Últimas unidades!</div>' : ''}
+        ${esgotada ? '<div class="badge-out">Esgotada</div>' : ''}
+        ${carouselBtns}
+        ${dotsHTML}
+        ${!esgotada ? `
+        <button class="card-add-btn ${noCarrinho?'added':''}"
+          onclick="toggleCarrinho(event,'${peca.id}')"
+          title="${noCarrinho?'Remover da lista':'Adicionar à lista'}">
+          ${noCarrinho ? iconeCheck() : iconePlus()}
+        </button>` : ''}
       </div>
-      <div class="card-info">
+      <div class="card-info" onclick="abrirModal('${peca.id}')" style="cursor:pointer">
         <div class="card-name">${peca.nome}</div>
         <div class="card-price">${formatarPreco(peca.preco)}</div>
       </div>
     </article>`
 }
 
-function trocarFoto(e, pecaId, dir) {
+// ── Carrossel no card ─────────────────────────────────────────
+function carouselCard(e, id, dir) {
   e.stopPropagation()
-  const wrap = document.querySelector(`.product-card[data-id="${pecaId}"] .card-img-wrap`)
-  if (!wrap) return
-  const fotos = JSON.parse(decodeURIComponent(wrap.dataset.fotos))
-  let idx = parseInt(wrap.dataset.fotoAtiva, 10)
-  idx += dir
+  const card  = document.querySelector(`[data-id="${id}"]`)
+  const fotos = JSON.parse(card.dataset.fotos)
+  let idx     = parseInt(card.dataset.fotoIdx) + dir
   if (idx < 0) idx = fotos.length - 1
   if (idx >= fotos.length) idx = 0
-  wrap.dataset.fotoAtiva = idx
-  const img = document.getElementById(`img-${pecaId}`)
-  img.style.opacity = '0.5'
-  setTimeout(() => {
-    img.src = fotos[idx]
-    img.style.opacity = '1'
-  }, 100)
+  card.dataset.fotoIdx = idx
+  document.getElementById(`card-img-${id}`).src = fotos[idx]
+  card.querySelectorAll('.card-dot').forEach((d, i) => d.classList.toggle('active', i === idx))
 }
 
-// ── Carrinho ─────────────────────────────────────────────────
+// ── Modal de detalhe ──────────────────────────────────────────
+function abrirModal(id) {
+  const peca = todasPecas.find(p => p.id === id)
+  if (!peca) return
+
+  const fotos = [peca.foto_path, peca.foto_2, peca.foto_3, peca.foto_4]
+    .filter(Boolean).map(p => fotoPublica(p))
+  if (!fotos.length) fotos.push('https://placehold.co/600x600/e8e8e4/888?text=Foto')
+
+  let fotoIdx = 0
+  const noCarrinho = carrinho.some(c => c.id === peca.id)
+  const esgotada   = peca.estoque != null && peca.estoque === 0
+  const catLabel   = CATEGORIAS[peca.categoria] || peca.categoria
+
+  const estoqueHTML = peca.estoque == null ? ''
+    : peca.estoque === 0 ? `<div class="modal-estoque low">❌ Esgotada</div>`
+    : peca.estoque <= 3  ? `<div class="modal-estoque low">⚠️ Últimas ${peca.estoque} unidades!</div>`
+    : `<div class="modal-estoque ok">✅ Em estoque (${peca.estoque} un.)</div>`
+
+  const thumbsHTML = fotos.length > 1
+    ? fotos.map((f,i) => `<img class="modal-thumb ${i===0?'active':''}" src="${f}" data-i="${i}" onclick="trocarFotoModal(${i})" />`).join('')
+    : ''
+
+  const navHTML = fotos.length > 1
+    ? `<div class="modal-gallery-nav">
+        <button class="modal-nav-btn" onclick="navModal(-1)">‹</button>
+        <button class="modal-nav-btn" onclick="navModal(1)">›</button>
+       </div>
+       <div class="modal-thumbs">${thumbsHTML}</div>`
+    : ''
+
+  const overlay = document.createElement('div')
+  overlay.className = 'modal-overlay'
+  overlay.id = 'pecaModal'
+  overlay.innerHTML = `
+    <div class="modal-box">
+      <button class="modal-close" onclick="fecharModal()">✕</button>
+      <div class="modal-inner">
+        <div class="modal-gallery">
+          <img id="modalFotoPrincipal" src="${fotos[0]}" alt="${peca.nome}" />
+          ${navHTML}
+        </div>
+        <div class="modal-info">
+          <div class="modal-badge">${catLabel}</div>
+          <div class="modal-name">${peca.nome}</div>
+          <div class="modal-price">${formatarPreco(peca.preco)}</div>
+          <div class="modal-divider"></div>
+          <div class="modal-desc">${peca.descricao || 'Peça em prata 925, acabamento polido de alta qualidade.'}</div>
+          ${estoqueHTML}
+          ${!esgotada ? `
+          <button class="modal-add-btn ${noCarrinho?'added':''}" id="modalAddBtn" onclick="toggleCarrinhoModal('${peca.id}')">
+            ${noCarrinho ? '✓ Na sua lista' : '+ Adicionar à lista'}
+          </button>` : `<div style="margin-top:24px;text-align:center;color:var(--red);font-weight:600">Peça esgotada</div>`}
+        </div>
+      </div>
+    </div>`
+
+  // Navegação interna do modal
+  overlay._fotos  = fotos
+  overlay._fotoIdx = 0
+
+  overlay.addEventListener('click', e => { if (e.target === overlay) fecharModal() })
+  document.body.appendChild(overlay)
+  requestAnimationFrame(() => overlay.classList.add('open'))
+  document.body.style.overflow = 'hidden'
+
+  // Teclado
+  overlay._keyHandler = e => {
+    if (e.key === 'Escape') fecharModal()
+    if (e.key === 'ArrowRight') navModal(1)
+    if (e.key === 'ArrowLeft')  navModal(-1)
+  }
+  document.addEventListener('keydown', overlay._keyHandler)
+}
+
+function navModal(dir) {
+  const overlay = document.getElementById('pecaModal')
+  if (!overlay) return
+  let idx = overlay._fotoIdx + dir
+  if (idx < 0) idx = overlay._fotos.length - 1
+  if (idx >= overlay._fotos.length) idx = 0
+  overlay._fotoIdx = idx
+  trocarFotoModal(idx)
+}
+
+function trocarFotoModal(idx) {
+  const overlay = document.getElementById('pecaModal')
+  if (!overlay) return
+  overlay._fotoIdx = idx
+  document.getElementById('modalFotoPrincipal').src = overlay._fotos[idx]
+  overlay.querySelectorAll('.modal-thumb').forEach((t,i) => t.classList.toggle('active', i === idx))
+}
+
+function fecharModal() {
+  const overlay = document.getElementById('pecaModal')
+  if (!overlay) return
+  document.removeEventListener('keydown', overlay._keyHandler)
+  overlay.classList.remove('open')
+  setTimeout(() => { overlay.remove(); document.body.style.overflow = '' }, 300)
+}
+
+function toggleCarrinhoModal(id) {
+  toggleCarrinho(null, id)
+  const btn = document.getElementById('modalAddBtn')
+  if (btn) {
+    const noCarrinho = carrinho.some(c => c.id === id)
+    btn.textContent = noCarrinho ? '✓ Na sua lista' : '+ Adicionar à lista'
+    btn.classList.toggle('added', noCarrinho)
+  }
+}
+
+// ── Carrinho ──────────────────────────────────────────────────
 function toggleCarrinho(e, id) {
-  if (e && e.stopPropagation) e.stopPropagation()
-  
+  if (e) e.stopPropagation()
   const peca = todasPecas.find(p => p.id === id)
   if (!peca) return
 
   const idx = carrinho.findIndex(c => c.id === id)
   if (idx === -1) {
-    if (peca.estoque === 0) return showToast('Peça esgotada!', 'error')
     carrinho.push({ ...peca, quantidade: 1 })
-    showToast(`"${peca.nome}" adicionado à lista ✓`, 'success')
-    db.from('eventos_carrinho').insert([{ peca_id: peca.id, acao: 'adicionou' }]).then()
+    showToast(`"${peca.nome}" adicionado ✓`, 'success')
+    registrarEvento(id, 'adicionou')
   } else {
     carrinho.splice(idx, 1)
-    showToast(`"${peca.nome}" removido da lista`)
-    db.from('eventos_carrinho').insert([{ peca_id: peca.id, acao: 'removeu' }]).then()
+    showToast(`"${peca.nome}" removido`)
+    registrarEvento(id, 'removeu')
   }
 
   atualizarContadorCarrinho()
-  renderGrid()         // atualiza ícone no card
-  renderCarrinho()     // atualiza drawer
+  renderGrid()
+  renderCarrinho()
 }
 
-function mudarQtd(id, delta) {
+function alterarQuantidade(id, delta) {
   const item = carrinho.find(c => c.id === id)
   if (!item) return
-  item.quantidade += delta
-  if (item.quantidade < 1) item.quantidade = 1
-  if (item.estoque !== null && item.quantidade > item.estoque) {
-     item.quantidade = item.estoque
-     showToast('Quantidade máxima em estoque atingida', 'error')
-  }
+  item.quantidade = Math.max(1, item.quantidade + delta)
   renderCarrinho()
-  renderGrid()
 }
 
 function atualizarContadorCarrinho() {
-  const n = carrinho.length
+  const n = carrinho.reduce((s, c) => s + c.quantidade, 0)
   cartCountEl.textContent = n
   cartCountEl.classList.toggle('hidden', n === 0)
 }
@@ -225,145 +278,61 @@ function renderCarrinho() {
 
   cartItemsEl.innerHTML = carrinho.map(peca => `
     <div class="cart-item">
-      <img
-        class="cart-item-img"
-        src="${fotoPublica(peca.foto_path)}"
-        alt="${peca.nome}"
-        onerror="this.src='https://placehold.co/64x64/e8e8e4/888?text=?'"
-      />
+      <img class="cart-item-img" src="${fotoPublica(peca.foto_path)}" alt="${peca.nome}"
+        onerror="this.src='https://placehold.co/64x64/e8e8e4/888?text=?'" />
       <div class="cart-item-info">
         <div class="cart-item-name">${peca.nome}</div>
-        <div class="cart-item-price">${formatarPreco(peca.preco)}</div>
+        <div class="cart-item-price">${formatarPreco(peca.preco)} × ${peca.quantidade} = ${formatarPreco(peca.preco * peca.quantidade)}</div>
         <div class="cart-item-qty">
-           <button class="qty-btn" onclick="mudarQtd('${peca.id}', -1)">-</button>
-           <span class="qty-val">${peca.quantidade}</span>
-           <button class="qty-btn" onclick="mudarQtd('${peca.id}', 1)">+</button>
+          <button class="qty-btn" onclick="alterarQuantidade('${peca.id}',-1)">−</button>
+          <span class="qty-value">${peca.quantidade}</span>
+          <button class="qty-btn" onclick="alterarQuantidade('${peca.id}',1)">+</button>
         </div>
       </div>
-      <button class="cart-item-remove" onclick="toggleCarrinho(event, '${peca.id}')" title="Remover">
+      <button class="cart-item-remove" onclick="toggleCarrinho(null,'${peca.id}')" title="Remover">
         <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
       </button>
     </div>`).join('')
 
-  const total = carrinho.reduce((s, p) => s + (Number(p.preco) * p.quantidade), 0)
-  cartTotalEl.textContent = formatarPreco(total)
+  const total = carrinho.reduce((s, p) => s + p.preco * p.quantidade, 0)
+  cartTotalEl.textContent  = formatarPreco(total)
   cartFooterEl.style.display = 'block'
+  atualizarContadorCarrinho()
 }
 
-function abrirCarrinho() {
-  renderCarrinho()
-  cartDrawer.classList.add('open')
-  cartOverlay.classList.add('open')
-  document.body.style.overflow = 'hidden'
-}
+function abrirCarrinho()  { renderCarrinho(); cartDrawer.classList.add('open'); cartOverlay.classList.add('open'); document.body.style.overflow = 'hidden' }
+function fecharCarrinho() { cartDrawer.classList.remove('open'); cartOverlay.classList.remove('open'); document.body.style.overflow = '' }
 
-function fecharCarrinho() {
-  cartDrawer.classList.remove('open')
-  cartOverlay.classList.remove('open')
-  document.body.style.overflow = ''
-}
-
-// ── Finalizar pedido no WhatsApp ─────────────────────────────
+// ── WhatsApp ──────────────────────────────────────────────────
 function finalizarWhatsapp() {
-  if (carrinho.length === 0) return
-
-  const linhas = carrinho.map(p => `• ${p.nome} × ${p.quantidade} — ${formatarPreco(p.preco * p.quantidade)}`)
-  const total  = carrinho.reduce((s, p) => s + (Number(p.preco) * p.quantidade), 0)
-
-  const msg = [
-    'Olá! Vi o catálogo e adorei essas peças 😍',
-    '',
-    ...linhas,
-    '',
-    `*Total estimado: ${formatarPreco(total)}*`,
-    '',
-    'Estão disponíveis? 🙏'
-  ].join('\n')
-
-  const url = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(msg)}`
-  window.open(url, '_blank')
+  if (!carrinho.length) return
+  const linhas = carrinho.map(p =>
+    p.quantidade > 1
+      ? `• ${p.nome} × ${p.quantidade} — ${formatarPreco(p.preco * p.quantidade)}`
+      : `• ${p.nome} — ${formatarPreco(p.preco)}`
+  )
+  const total = carrinho.reduce((s, p) => s + p.preco * p.quantidade, 0)
+  const msg = ['Olá! Vi o catálogo e adorei essas peças 😍','', ...linhas,'',`*Total estimado: ${formatarPreco(total)}*`,'','Estão disponíveis? 🙏'].join('\n')
+  window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(msg)}`, '_blank')
 }
 
-// ── Modal de Produto ─────────────────────────────────────────
-let modalFotosAtual = []
-let modalFotoIdx = 0
-
-function abrirModal(id) {
-  const peca = todasPecas.find(p => p.id === id)
-  if (!peca) return
-  
-  modalFotosAtual = []
-  if (peca.foto_path) modalFotosAtual.push(fotoPublica(peca.foto_path))
-  if (peca.foto_2) modalFotosAtual.push(fotoPublica(peca.foto_2))
-  if (peca.foto_3) modalFotosAtual.push(fotoPublica(peca.foto_3))
-  if (peca.foto_4) modalFotosAtual.push(fotoPublica(peca.foto_4))
-  if (modalFotosAtual.length === 0) modalFotosAtual.push('https://placehold.co/400x400/e8e8e4/888?text=Foto')
-
-  modalFotoIdx = 0
-  
-  document.getElementById('modalCat').textContent = CATEGORIAS[peca.categoria] || peca.categoria
-  document.getElementById('modalName').textContent = peca.nome
-  document.getElementById('modalPrice').textContent = formatarPreco(peca.preco)
-  
-  let descHtml = peca.descricao || ''
-  if (peca.estoque !== null) {
-    descHtml += `\n\nEstoque disponível: ${peca.estoque}`
-  }
-  document.getElementById('modalDesc').textContent = descHtml
-
-  renderizarModalGaleria()
-
-  const modal = document.getElementById('productModal')
-  modal.classList.add('open')
-  document.body.style.overflow = 'hidden'
-  
-  document.addEventListener('keydown', handleModalKeys)
+// ── Tracking ──────────────────────────────────────────────────
+function registrarEvento(pecaId, acao) {
+  db.from('eventos_carrinho').insert([{ peca_id: pecaId, acao }]).then(({ error }) => {
+    if (error) console.warn('Tracking error:', error)
+  })
 }
 
-function renderizarModalGaleria() {
-  const galeria = document.getElementById('modalGallery')
-  let imgStr = modalFotosAtual.map((f, i) => `<img src="${f}" class="${i===modalFotoIdx?'active':''}" />`).join('')
-  
-  if (modalFotosAtual.length > 1) {
-    imgStr += `
-      <div class="modal-nav prev" onclick="trocarFotoModal(-1, event)">&#8249;</div>
-      <div class="modal-nav next" onclick="trocarFotoModal(1, event)">&#8250;</div>
-    `
-  }
-  galeria.innerHTML = imgStr
-}
-
-function trocarFotoModal(dir, e) {
-  if (e) e.stopPropagation()
-  modalFotoIdx += dir
-  if (modalFotoIdx < 0) modalFotoIdx = modalFotosAtual.length - 1
-  if (modalFotoIdx >= modalFotosAtual.length) modalFotoIdx = 0
-  renderizarModalGaleria()
-}
-
-function fecharModal() {
-  document.getElementById('productModal').classList.remove('open')
-  document.body.style.overflow = ''
-  document.removeEventListener('keydown', handleModalKeys)
-}
-
-function handleModalKeys(e) {
-  if (e.key === 'Escape') fecharModal()
-  if (e.key === 'ArrowLeft') trocarFotoModal(-1)
-  if (e.key === 'ArrowRight') trocarFotoModal(1)
-}
-
-// ── Helpers ──────────────────────────────────────────────────
+// ── Helpers ───────────────────────────────────────────────────
 function fotoPublica(path) {
   if (!path) return 'https://placehold.co/400x400/e8e8e4/888?text=Foto'
-  // Se já for URL completa (http...), usa direto
   if (path.startsWith('http')) return path
   const { data } = db.storage.from(STORAGE_BUCKET).getPublicUrl(path)
   return data.publicUrl
 }
 
 function formatarPreco(valor) {
-  return Number(valor).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+  return Number(valor).toLocaleString('pt-BR', { style:'currency', currency:'BRL' })
 }
 
 function showToast(msg, tipo = '') {
@@ -372,10 +341,5 @@ function showToast(msg, tipo = '') {
   setTimeout(() => toastEl.classList.remove('show'), 2800)
 }
 
-function iconePlus() {
-  return `<svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>`
-}
-
-function iconeCheck() {
-  return `<svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>`
-}
+function iconePlus() { return `<svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>` }
+function iconeCheck() { return `<svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>` }

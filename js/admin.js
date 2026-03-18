@@ -1,165 +1,145 @@
 // ============================================================
 //  ÁUREAS PRATA — js/admin.js
-//  Lógica do painel administrativo
 // ============================================================
 
-// ── Estado ──────────────────────────────────────────────────
 let todasPecasAdmin = []
 let filtroAdminCat  = 'todos'
-let fotoArquivos    = [null, null, null, null]
-let fotosAtuais     = [null, null, null, null]
+let fotosArquivos   = [null, null, null, null]   // até 4 fotos
+let fotosExistentes = ['', '', '', '']           // paths já salvos (edição)
 
-const CATEGORIAS = {
-  aneis:     'Anéis',
-  colares:   'Colares',
-  brincos:   'Brincos',
-  pulseiras: 'Pulseiras',
-}
+const CATEGORIAS = { aneis:'Anéis', colares:'Colares', brincos:'Brincos', pulseiras:'Pulseiras' }
 
-// ── Elementos ───────────────────────────────────────────────
-const toastEl      = document.getElementById('toast')
-const tableBody    = document.getElementById('adminTableBody')
-const saveBtn      = document.getElementById('saveBtn')
-const saveBtnText  = document.getElementById('saveBtnText')
-const saveSpinner  = document.getElementById('saveSpinner')
-const cancelEditBtn= document.getElementById('cancelEditBtn')
+const toastEl       = document.getElementById('toast')
+const tableBody     = document.getElementById('adminTableBody')
+const saveBtn       = document.getElementById('saveBtn')
+const saveBtnText   = document.getElementById('saveBtnText')
+const saveSpinner   = document.getElementById('saveSpinner')
+const cancelEditBtn = document.getElementById('cancelEditBtn')
 
-// ── Inicialização ────────────────────────────────────────────
+// ── Init ─────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
+  configurarSlots()
   carregarPecasAdmin()
-  carregarRelatorio()
+  carregarRelatorio(7)
 })
 
-// ── Upload de foto ───────────────────────────────────────────
-function previewUpload(input, index) {
-  const file = input.files[0]
-  if (!file) return
-  if (file.size > 5 * 1024 * 1024) {
-    showToast('Foto muito grande! Máximo 5MB.', 'error')
-    input.value = ''
-    return
+// ── Slots de foto ─────────────────────────────────────────────
+function configurarSlots() {
+  for (let i = 0; i < 4; i++) {
+    const slot  = document.getElementById(`slot${i}`)
+    const input = document.getElementById(`photoInput${i}`)
+
+    slot.addEventListener('click', (e) => {
+      if (e.target.classList.contains('slot-remove')) return
+      input.click()
+    })
+
+    input.addEventListener('change', e => {
+      const file = e.target.files[0]
+      if (file) selecionarFoto(i, file)
+    })
+
+    slot.addEventListener('dragover', e => { e.preventDefault(); slot.style.borderColor = 'var(--gold-light)' })
+    slot.addEventListener('dragleave', () => { slot.style.borderColor = '' })
+    slot.addEventListener('drop', e => {
+      e.preventDefault(); slot.style.borderColor = ''
+      const file = e.dataTransfer.files[0]
+      if (file && file.type.startsWith('image/')) selecionarFoto(i, file)
+    })
   }
-  
-  fotoArquivos[index] = file
+}
+
+function selecionarFoto(idx, file) {
+  if (file.size > 5 * 1024 * 1024) { showToast('Foto muito grande! Máx. 5MB.', 'error'); return }
+  fotosArquivos[idx] = file
   const reader = new FileReader()
-  reader.onload = e => setSlotImage(index, e.target.result)
+  reader.onload = e => mostrarPreview(idx, e.target.result)
   reader.readAsDataURL(file)
 }
 
-function setSlotImage(index, url) {
-  const slot = document.getElementById(`slot${index}`)
-  slot.classList.add('has-image')
-  
-  // Remove imagem antiga e botão de remoção se existirem
-  const oldImg = slot.querySelector('img')
-  if (oldImg) oldImg.remove()
-  const oldBtn = slot.querySelector('.remove-photo')
-  if (oldBtn) oldBtn.remove()
-  
-  // Cria nova imagem
-  const img = document.createElement('img')
-  img.src = url
-  slot.appendChild(img)
-  
-  // Botão de remoção
-  const removeBtn = document.createElement('div')
-  removeBtn.className = 'remove-photo'
-  removeBtn.innerHTML = '&times;'
-  removeBtn.onclick = (e) => {
-    e.stopPropagation()
-    limparSlot(index)
-  }
-  slot.appendChild(removeBtn)
+function mostrarPreview(idx, src) {
+  const preview = document.getElementById(`preview${idx}`)
+  const remove  = document.getElementById(`remove${idx}`)
+  const slot    = document.getElementById(`slot${idx}`)
+  preview.src = src
+  preview.classList.remove('hidden')
+  remove.classList.remove('hidden')
+  slot.querySelector('.slot-placeholder').style.opacity = '0'
 }
 
-function limparSlot(index) {
-  fotoArquivos[index] = null
-  fotosAtuais[index] = null
-  const input = document.getElementById(`photoInput${index}`)
-  if (input) input.value = ''
-  
-  const slot = document.getElementById(`slot${index}`)
-  slot.classList.remove('has-image')
-  const oldImg = slot.querySelector('img')
-  if (oldImg) oldImg.remove()
-  const oldBtn = slot.querySelector('.remove-photo')
-  if (oldBtn) oldBtn.remove()
+function removerFoto(idx) {
+  fotosArquivos[idx]   = null
+  fotosExistentes[idx] = ''
+  const preview = document.getElementById(`preview${idx}`)
+  const remove  = document.getElementById(`remove${idx}`)
+  const slot    = document.getElementById(`slot${idx}`)
+  preview.classList.add('hidden')
+  preview.src = ''
+  remove.classList.add('hidden')
+  slot.querySelector('.slot-placeholder').style.opacity = '1'
+  document.getElementById(`photoInput${idx}`).value = ''
 }
 
 // ── Carregar peças ────────────────────────────────────────────
 async function carregarPecasAdmin() {
   try {
-    const { data, error } = await db
-      .from('pecas')
-      .select('*')
-      .order('created_at', { ascending: false })
-
+    const { data, error } = await db.from('pecas').select('*').order('created_at', { ascending: false })
     if (error) throw error
     todasPecasAdmin = data || []
     atualizarStats()
     renderTabela()
   } catch (err) {
-    console.error('Erro ao carregar:', err)
-    tableBody.innerHTML = `<tr><td colspan="6" style="text-align:center;color:#C0392B;padding:40px">Erro ao carregar. Verifique sua conexão.</td></tr>`
+    console.error(err)
+    tableBody.innerHTML = `<tr><td colspan="7" style="text-align:center;color:var(--red);padding:40px">Erro ao carregar. Verifique sua conexão.</td></tr>`
   }
 }
 
-// ── Stats ─────────────────────────────────────────────────────
 function atualizarStats() {
-  const total   = todasPecasAdmin.length
-  const visiveis= todasPecasAdmin.filter(p => p.visivel).length
-  const ocultas = total - visiveis
+  const total    = todasPecasAdmin.length
+  const visiveis = todasPecasAdmin.filter(p => p.visivel).length
   document.getElementById('statTotal').textContent   = total
   document.getElementById('statVisible').textContent = visiveis
-  document.getElementById('statHidden').textContent  = ocultas
+  document.getElementById('statHidden').textContent  = total - visiveis
 }
 
-// ── Renderizar tabela ─────────────────────────────────────────
+// ── Tabela ────────────────────────────────────────────────────
 function renderTabela() {
   const lista = filtroAdminCat === 'todos'
     ? todasPecasAdmin
     : todasPecasAdmin.filter(p => p.categoria === filtroAdminCat)
 
   if (lista.length === 0) {
-    tableBody.innerHTML = `<tr><td colspan="6" style="text-align:center;color:#888;padding:40px">Nenhuma peça encontrada.</td></tr>`
+    tableBody.innerHTML = `<tr><td colspan="7" style="text-align:center;color:#888;padding:40px">Nenhuma peça encontrada.</td></tr>`
     return
   }
 
   tableBody.innerHTML = lista.map(peca => {
-    const fotoURL  = fotoPublicaAdmin(peca.foto_path)
+    const foto     = fotoPublicaAdmin(peca.foto_path)
     const catLabel = CATEGORIAS[peca.categoria] || peca.categoria
     const statusCls= peca.visivel ? 'visible' : 'hidden-product'
     const statusTxt= peca.visivel ? '● Visível' : '○ Oculta'
+    const estoque  = peca.estoque != null
+      ? (peca.estoque === 0 ? '<span style="color:var(--red)">Esgotado</span>'
+        : peca.estoque <= 3 ? `<span style="color:var(--red)">${peca.estoque} un.</span>`
+        : `${peca.estoque} un.`)
+      : '<span style="color:#bbb">—</span>'
 
     return `
       <tr>
-        <td>
-          <img
-            class="product-thumb"
-            src="${fotoURL}"
-            alt="${peca.nome}"
-            onerror="this.src='https://placehold.co/44x44/e8e8e4/888?text=?'"
-          />
-        </td>
+        <td><img class="product-thumb" src="${foto}" alt="${peca.nome}" onerror="this.src='https://placehold.co/44x44/e8e8e4/888?text=?'" /></td>
         <td class="product-name-cell">${peca.nome}</td>
         <td>${catLabel}</td>
         <td class="price-cell">${formatarPreco(peca.preco)}</td>
-        <td>
-          <button
-            class="toggle-btn ${statusCls}"
-            onclick="toggleVisivel('${peca.id}', ${peca.visivel})"
-            title="Clique para ${peca.visivel ? 'ocultar' : 'mostrar'}"
-          >${statusTxt}</button>
-        </td>
+        <td>${estoque}</td>
+        <td><button class="toggle-btn ${statusCls}" onclick="toggleVisivel('${peca.id}',${peca.visivel})">${statusTxt}</button></td>
         <td>
           <button class="action-btn" onclick="editarPeca('${peca.id}')">✏️ Editar</button>
-          <button class="action-btn delete" onclick="confirmarDelete('${peca.id}', '${peca.nome.replace(/'/g, "\\'")}')">🗑 Deletar</button>
+          <button class="action-btn delete" onclick="confirmarDelete('${peca.id}','${peca.nome.replace(/'/g,"\\'")}')">🗑 Deletar</button>
         </td>
       </tr>`
   }).join('')
 }
 
-// ── Filtro da tabela admin ────────────────────────────────────
 function filtrarAdmin(btn) {
   document.querySelectorAll('[data-admin-cat]').forEach(b => b.classList.remove('active'))
   btn.classList.add('active')
@@ -167,188 +147,190 @@ function filtrarAdmin(btn) {
   renderTabela()
 }
 
-// ── Salvar peça (criar ou editar) ─────────────────────────────
+// ── Salvar peça ───────────────────────────────────────────────
 async function salvarPeca() {
   const nome      = document.getElementById('inputNome').value.trim()
   const categoria = document.getElementById('inputCategoria').value
   const preco     = parseFloat(document.getElementById('inputPreco').value)
-  let estoque     = parseInt(document.getElementById('inputEstoque').value, 10)
-  if (isNaN(estoque)) estoque = null
+  const estoqueVal= document.getElementById('inputEstoque').value
   const descricao = document.getElementById('inputDesc').value.trim()
   const editingId = document.getElementById('editingId').value
 
-  // Validação
-  if (!nome)      return showToast('Informe o nome da peça.', 'error')
-  if (!categoria) return showToast('Selecione uma categoria.', 'error')
-  if (isNaN(preco) || preco <= 0) return showToast('Informe um preço válido.', 'error')
-  
-  // Pelo menos 1 foto na principal ou existente
-  if (!editingId && !fotoArquivos[0]) return showToast('Adicione a foto principal.', 'error')
+  if (!nome)                          return showToast('Informe o nome da peça.', 'error')
+  if (!categoria)                     return showToast('Selecione uma categoria.', 'error')
+  if (isNaN(preco) || preco <= 0)     return showToast('Informe um preço válido.', 'error')
+  if (!editingId && !fotosArquivos[0]) return showToast('Adicione pelo menos a foto principal.', 'error')
+
+  const estoque = estoqueVal !== '' ? parseInt(estoqueVal) : null
 
   setBtnLoading(true)
-
   try {
-    let foto_paths = [...fotosAtuais] // inicia com os caminhos atuais se houver
-
-    const uploads = fotoArquivos.map(async (arquivo, idx) => {
-      if (!arquivo) return null
-      const ext      = arquivo.name.split('.').pop()
-      const nomeArq  = `${Date.now()}-${idx}-${Math.random().toString(36).slice(2)}.${ext}`
-      const { error: uploadErr } = await db.storage
-        .from(STORAGE_BUCKET)
-        .upload(nomeArq, arquivo, { cacheControl: '3600', upsert: false })
-
-      if (uploadErr) throw uploadErr
-      return nomeArq
+    // Upload das fotos novas
+    const paths = [...fotosExistentes]
+    const uploads = fotosArquivos.map((file, i) => {
+      if (!file) return Promise.resolve(null)
+      const ext    = file.name.split('.').pop()
+      const nome_  = `${Date.now()}-${i}-${Math.random().toString(36).slice(2)}.${ext}`
+      return db.storage.from(STORAGE_BUCKET).upload(nome_, file, { cacheControl:'3600', upsert:false })
+        .then(({ error }) => { if (error) throw error; return nome_ })
     })
 
-    const novosPaths = await Promise.all(uploads)
-    
-    // Mescla os novos uploads nos paths atuais
-    for (let i=0; i<4; i++) {
-        if (novosPaths[i]) foto_paths[i] = novosPaths[i]
+    const resultados = await Promise.all(uploads)
+    resultados.forEach((path, i) => { if (path) paths[i] = path })
+
+    const payload = {
+      nome, categoria, preco, descricao, estoque,
+      foto_path: paths[0] || null,
+      foto_2:    paths[1] || null,
+      foto_3:    paths[2] || null,
+      foto_4:    paths[3] || null,
     }
 
     if (editingId) {
-      // ── EDITAR ──
-      const updates = { 
-        nome, categoria, preco, descricao, estoque,
-        foto_path: foto_paths[0],
-        foto_2: foto_paths[1] || null,
-        foto_3: foto_paths[2] || null,
-        foto_4: foto_paths[3] || null
-      }
-
-      const { error } = await db
-        .from('pecas')
-        .update(updates)
-        .eq('id', editingId)
-
+      const { error } = await db.from('pecas').update(payload).eq('id', editingId)
       if (error) throw error
-      showToast('Peça atualizada com sucesso! ✓', 'success')
+      showToast('Peça atualizada! ✓', 'success')
     } else {
-      // ── CRIAR ──
-      const { error } = await db
-        .from('pecas')
-        .insert([{ 
-          nome, categoria, preco, descricao, estoque,
-          foto_path: foto_paths[0],
-          foto_2: foto_paths[1] || null,
-          foto_3: foto_paths[2] || null,
-          foto_4: foto_paths[3] || null,
-          visivel: true 
-        }])
-
+      const { error } = await db.from('pecas').insert([{ ...payload, visivel: true }])
       if (error) throw error
-      showToast('Peça cadastrada com sucesso! ✓', 'success')
+      showToast('Peça cadastrada! ✓', 'success')
     }
 
     limparFormulario()
     await carregarPecasAdmin()
-
   } catch (err) {
-    console.error('Erro ao salvar:', err)
+    console.error(err)
     showToast('Erro ao salvar. Tente novamente.', 'error')
   } finally {
     setBtnLoading(false)
   }
 }
 
-// ── Editar peça ───────────────────────────────────────────────
+// ── Editar ────────────────────────────────────────────────────
 function editarPeca(id) {
-  const peca = todasPecasAdmin.find(p => p.id === id)
-  if (!peca) return
+  const p = todasPecasAdmin.find(p => p.id === id)
+  if (!p) return
 
-  limparFormulario()
+  document.getElementById('inputNome').value      = p.nome
+  document.getElementById('inputCategoria').value = p.categoria
+  document.getElementById('inputPreco').value     = p.preco
+  document.getElementById('inputEstoque').value   = p.estoque ?? ''
+  document.getElementById('inputDesc').value      = p.descricao || ''
+  document.getElementById('editingId').value      = p.id
 
-  document.getElementById('inputNome').value      = peca.nome
-  document.getElementById('inputCategoria').value = peca.categoria
-  document.getElementById('inputPreco').value     = peca.preco
-  document.getElementById('inputEstoque').value   = peca.estoque !== null ? peca.estoque : ''
-  document.getElementById('inputDesc').value      = peca.descricao || ''
-  document.getElementById('editingId').value      = peca.id
+  // Mostra fotos existentes nos slots
+  const caminhos = [p.foto_path, p.foto_2, p.foto_3, p.foto_4]
+  fotosExistentes = caminhos.map(c => c || '')
+  fotosArquivos   = [null, null, null, null]
 
-  fotosAtuais = [
-    peca.foto_path || null,
-    peca.foto_2 || null,
-    peca.foto_3 || null,
-    peca.foto_4 || null
-  ]
-
-  fotosAtuais.forEach((path, idx) => {
-    if (path) {
-      setSlotImage(idx, fotoPublicaAdmin(path))
-    }
+  caminhos.forEach((path, i) => {
+    if (path) mostrarPreview(i, fotoPublicaAdmin(path))
   })
 
   document.getElementById('formTitle').textContent = '✏️ Editando Peça'
   saveBtnText.textContent = 'Salvar Alterações'
   cancelEditBtn.classList.remove('hidden')
-
-  // Rola para o formulário
   document.querySelector('.admin-section').scrollIntoView({ behavior: 'smooth' })
 }
 
-// ── Cancelar edição ───────────────────────────────────────────
-function cancelarEdicao() {
-  limparFormulario()
-}
+function cancelarEdicao() { limparFormulario() }
 
 function limparFormulario() {
-  document.getElementById('inputNome').value      = ''
-  document.getElementById('inputCategoria').value = ''
-  document.getElementById('inputPreco').value     = ''
-  document.getElementById('inputEstoque').value   = ''
-  document.getElementById('inputDesc').value      = ''
-  document.getElementById('editingId').value      = ''
-  
-  for(let i=0; i<4; i++) limparSlot(i)
-
+  ['inputNome','inputCategoria','inputPreco','inputEstoque','inputDesc','editingId'].forEach(id => {
+    document.getElementById(id).value = ''
+  })
+  fotosArquivos   = [null, null, null, null]
+  fotosExistentes = ['', '', '', '']
+  for (let i = 0; i < 4; i++) removerFoto(i)
   document.getElementById('formTitle').textContent = 'Cadastrar Nova Peça'
   saveBtnText.textContent = 'Cadastrar Peça'
   cancelEditBtn.classList.add('hidden')
 }
 
-// ── Toggle visível / oculto ───────────────────────────────────
+// ── Toggle visível ────────────────────────────────────────────
 async function toggleVisivel(id, visivel) {
   try {
-    const { error } = await db
-      .from('pecas')
-      .update({ visivel: !visivel })
-      .eq('id', id)
-
+    const { error } = await db.from('pecas').update({ visivel: !visivel }).eq('id', id)
     if (error) throw error
-    showToast(visivel ? 'Peça ocultada.' : 'Peça visível novamente! ✓', visivel ? '' : 'success')
+    showToast(visivel ? 'Peça ocultada.' : 'Peça visível! ✓', visivel ? '' : 'success')
     await carregarPecasAdmin()
-  } catch (err) {
-    showToast('Erro ao alterar status.', 'error')
-  }
+  } catch { showToast('Erro ao alterar status.', 'error') }
 }
 
-// ── Deletar peça ──────────────────────────────────────────────
+// ── Deletar ───────────────────────────────────────────────────
 function confirmarDelete(id, nome) {
-  if (!confirm(`Tem certeza que deseja deletar "${nome}"?\nEssa ação não pode ser desfeita.`)) return
+  if (!confirm(`Deletar "${nome}"?\nEssa ação não pode ser desfeita.`)) return
   deletarPeca(id)
 }
 
 async function deletarPeca(id) {
   try {
-    const peca = todasPecasAdmin.find(p => p.id === id)
-
-    // Remove foto do storage se existir
-    if (peca?.foto_path && !peca.foto_path.startsWith('http')) {
-      await db.storage.from(STORAGE_BUCKET).remove([peca.foto_path])
-    }
+    const p = todasPecasAdmin.find(p => p.id === id)
+    const paths = [p?.foto_path, p?.foto_2, p?.foto_3, p?.foto_4].filter(Boolean).filter(x => !x.startsWith('http'))
+    if (paths.length) await db.storage.from(STORAGE_BUCKET).remove(paths)
 
     const { error } = await db.from('pecas').delete().eq('id', id)
     if (error) throw error
-
-    showToast('Peça deletada.', '')
+    showToast('Peça deletada.')
     await carregarPecasAdmin()
-    carregarRelatorio()
+  } catch { showToast('Erro ao deletar.', 'error') }
+}
+
+// ── Relatório ─────────────────────────────────────────────────
+async function carregarRelatorio(dias) {
+  const container = document.getElementById('relatorioContainer')
+  container.innerHTML = `<p style="color:#888;text-align:center;padding:32px">Carregando...</p>`
+  try {
+    let query = db.from('eventos_carrinho').select('peca_id').eq('acao', 'adicionou')
+    if (dias > 0) {
+      const desde = new Date(Date.now() - dias * 24 * 60 * 60 * 1000).toISOString()
+      query = query.gte('created_at', desde)
+    }
+    const { data: eventos, error } = await query
+    if (error) throw error
+
+    if (!eventos || eventos.length === 0) {
+      container.innerHTML = `<p style="color:#888;text-align:center;padding:32px">Nenhum dado ainda. As peças aparecerão aqui conforme as clientes adicionarem ao carrinho.</p>`
+      return
+    }
+
+    // Conta por peça
+    const contagem = {}
+    eventos.forEach(e => { contagem[e.peca_id] = (contagem[e.peca_id] || 0) + 1 })
+    const ordenado = Object.entries(contagem).sort((a, b) => b[1] - a[1]).slice(0, 10)
+    const maxCount = ordenado[0][1]
+
+    // Busca nomes
+    const ids = ordenado.map(([id]) => id)
+    const { data: pecas } = await db.from('pecas').select('id,nome,categoria').in('id', ids)
+    const mapa = Object.fromEntries((pecas || []).map(p => [p.id, p]))
+
+    container.innerHTML = ordenado.map(([id, count], i) => {
+      const peca   = mapa[id]
+      const nome   = peca ? peca.nome : 'Peça removida'
+      const cat    = peca ? (CATEGORIAS[peca.categoria] || peca.categoria) : ''
+      const pct    = Math.round((count / maxCount) * 100)
+      const medalha= i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `${i+1}º`
+      return `
+        <div class="relatorio-item">
+          <div class="relatorio-rank">${medalha}</div>
+          <div class="relatorio-info">
+            <div class="relatorio-nome">${nome} ${cat ? `<span style="font-size:12px;color:#888">· ${cat}</span>` : ''}</div>
+            <div class="relatorio-bar-wrap"><div class="relatorio-bar" style="width:${pct}%"></div></div>
+          </div>
+          <div class="relatorio-count">${count} <span>adições</span></div>
+        </div>`
+    }).join('')
   } catch (err) {
-    showToast('Erro ao deletar.', 'error')
+    console.error(err)
+    container.innerHTML = `<p style="color:var(--red);text-align:center;padding:32px">Erro ao carregar relatório.</p>`
   }
+}
+
+function filtrarRelatorio(btn) {
+  document.querySelectorAll('[data-periodo]').forEach(b => b.classList.remove('active'))
+  btn.classList.add('active')
+  carregarRelatorio(parseInt(btn.dataset.periodo))
 }
 
 // ── Helpers ───────────────────────────────────────────────────
@@ -360,7 +342,7 @@ function fotoPublicaAdmin(path) {
 }
 
 function formatarPreco(valor) {
-  return Number(valor).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+  return Number(valor).toLocaleString('pt-BR', { style:'currency', currency:'BRL' })
 }
 
 function setBtnLoading(on) {
@@ -373,62 +355,4 @@ function showToast(msg, tipo = '') {
   toastEl.textContent = msg
   toastEl.className   = `toast ${tipo} show`
   setTimeout(() => toastEl.classList.remove('show'), 2800)
-}
-
-// ── Relatório de Peças ────────────────────────────────────────
-async function carregarRelatorio() {
-  const dias = document.getElementById('reportFilter').value
-  const listEl = document.getElementById('reportList')
-
-  try {
-    let query = db.from('eventos_carrinho').select('peca_id, acao, created_at').eq('acao', 'adicionou')
-    
-    if (dias !== 'todos') {
-      const ms = parseInt(dias) * 24 * 60 * 60 * 1000
-      const d = new Date(Date.now() - ms).toISOString()
-      query = query.gte('created_at', d)
-    }
-
-    const { data, error } = await query
-    if (error) throw error
-
-    if (!data || data.length === 0) {
-      listEl.innerHTML = '<div style="color:var(--gray-mid); text-align:center; padding: 20px;">Nenhuma adição registrada nesse período.</div>'
-      return
-    }
-
-    // Agrupar
-    const contagem = {}
-    data.forEach(e => {
-        contagem[e.peca_id] = (contagem[e.peca_id] || 0) + 1
-    })
-
-    const rank = Object.keys(contagem).map(id => {
-      const peca = todasPecasAdmin.find(p => p.id === id)
-      return {
-        id,
-        nome: peca ? peca.nome : 'Peça deletada',
-        count: contagem[id]
-      }
-    }).sort((a,b) => b.count - a.count)
-
-    const maxCount = rank[0].count
-
-    listEl.innerHTML = rank.map(item => {
-      const pct = (item.count / maxCount) * 100
-      return `
-        <div class="report-item">
-           <div class="report-bar-wrap">
-              <div class="report-bar" style="width: ${pct}%"></div>
-              <div class="report-label">${item.nome}</div>
-           </div>
-           <div class="report-count">${item.count}</div>
-        </div>
-      `
-    }).join('')
-
-  } catch (err) {
-    console.error('Erro no relatório', err)
-    listEl.innerHTML = '<div style="color:red;text-align:center;">Erro ao carregar relatório.</div>'
-  }
 }
