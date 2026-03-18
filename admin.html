@@ -209,6 +209,22 @@
           <button class="filter-btn" data-periodo="30" onclick="filtrarRelatorio(this)">Últimos 30 dias</button>
           <button class="filter-btn" data-periodo="0"  onclick="filtrarRelatorio(this)">Todos os tempos</button>
         </div>
+
+        <!-- Botões de limpar — adiciona após os filtros de período -->
+        <div style="display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap;padding-top:12px;border-top:1px solid var(--gray-light)">
+          <span style="font-size:12px;color:var(--gray-mid);align-self:center;margin-right:4px">
+            Limpar dados:
+          </span>
+          <button class="action-btn delete" onclick="confirmarLimpeza(7)">
+            🗑 Últimos 7 dias
+          </button>
+          <button class="action-btn delete" onclick="confirmarLimpeza(30)">
+            🗑 Últimos 30 dias
+          </button>
+          <button class="action-btn delete" onclick="confirmarLimpeza(0)">
+            🗑 Todos os tempos
+          </button>
+        </div>
         <div id="relatorioContainer">
           <p style="color:#888;text-align:center;padding:32px">Carregando relatório...</p>
         </div>

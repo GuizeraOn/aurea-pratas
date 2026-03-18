@@ -798,6 +798,47 @@ function filtrarRelatorio(btn) {
   carregarRelatorio(parseInt(btn.dataset.periodo))
 }
 
+function confirmarLimpeza(dias) {
+  const labels = {
+    7:  'os últimos 7 dias',
+    30: 'os últimos 30 dias',
+    0:  'TODOS os tempos'
+  }
+  const confirmado = confirm(
+    `Tem certeza que deseja apagar permanentemente os dados de ${labels[dias]}?\n\nEssa ação não pode ser desfeita.`
+  )
+  if (confirmado) limparRelatorio(dias)
+}
+
+async function limparRelatorio(dias) {
+  try {
+    let query = db.from('eventos_carrinho').delete()
+
+    if (dias > 0) {
+      const desde = new Date(Date.now() - dias * 24 * 60 * 60 * 1000).toISOString()
+      query = query.gte('created_at', desde)
+    } else {
+      // Deleta tudo — precisa de um filtro que seja sempre true
+      query = query.gte('created_at', '2000-01-01')
+    }
+
+    const { error } = await query
+    if (error) throw error
+
+    const labels = { 7: '7 dias', 30: '30 dias', 0: 'todos os tempos' }
+    showToast(`Dados de ${labels[dias]} apagados com sucesso.`, 'success')
+
+    // Recarrega o relatório com o filtro ativo atual
+    const periodoAtivo = document.querySelector('[data-periodo].active')
+    const diasAtivos = periodoAtivo ? parseInt(periodoAtivo.dataset.periodo) : 7
+    carregarRelatorio(diasAtivos)
+
+  } catch (err) {
+    console.error('Erro ao limpar:', err)
+    showToast('Erro ao apagar os dados. Tente novamente.', 'error')
+  }
+}
+
 // ── Helpers ───────────────────────────────────────────────────
 function fotoPublicaAdmin(path) {
   if (!path) return 'https://placehold.co/44x44/e8e8e4/888?text=?'
