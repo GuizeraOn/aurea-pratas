@@ -33,6 +33,7 @@ body {
   font-size: 15px;
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
 }
 a { color: inherit; text-decoration: none; }
 img { display: block; width: 100%; object-fit: cover; }
@@ -90,13 +91,14 @@ input, select, textarea { font-family: var(--font-body); font-size: 14px; outlin
 
 @media (max-width: 768px) {
   .filters-wrap {
-    padding-left: 16px; padding-right: 0;
+    padding-left: 0; padding-right: 0;
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
     scrollbar-width: none;
+    padding-bottom: 8px;
   }
   .filters-wrap::-webkit-scrollbar { display: none; }
-  .filters { flex-wrap: nowrap; padding-right: 16px; }
+  .filters { flex-wrap: nowrap; padding: 0 16px; }
 }
 .filter-btn {
   padding: 8px 20px; border-radius: 100px;
