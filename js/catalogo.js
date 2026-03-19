@@ -308,9 +308,15 @@ function abrirModal(id) {
 
   const imagensHTML = fotos.map(f => `<img src="${f}" alt="${peca.nome}" loading="lazy" />`).join('')
 
-  const overlay = document.createElement('div')
-  overlay.className = 'modal-overlay'
-  overlay.id = 'pecaModal'
+  let overlay = document.getElementById('pecaModal')
+  let isNewModal = false
+  if (!overlay) {
+    overlay = document.createElement('div')
+    overlay.className = 'modal-overlay'
+    overlay.id = 'pecaModal'
+    isNewModal = true
+  }
+
   overlay.innerHTML = `
     <div class="modal-box">
       <button class="modal-close" onclick="fecharModal()">✕</button>
@@ -333,6 +339,12 @@ function abrirModal(id) {
           <button class="modal-add-btn" id="modalAddBtn" onclick="tentarAdicionarAoCarrinho('${peca.id}')">
             + Adicionar à lista
           </button>` : `<div style="margin-top:24px;text-align:center;color:var(--red);font-weight:600">Peça esgotada</div>`}
+          
+          <div class="modal-related-section hidden" id="modalRelatedSection">
+            <div class="modal-divider"></div>
+            <h3 class="modal-related-title">Outras clientes também amaram</h3>
+            <div class="modal-related-grid" id="modalRelatedGrid"></div>
+          </div>
         </div>
       </div>
     </div>`
@@ -341,18 +353,71 @@ function abrirModal(id) {
   overlay._fotos  = fotos
   overlay._fotoIdx = 0
 
-  overlay.addEventListener('click', e => { if (e.target === overlay) fecharModal() })
-  document.body.appendChild(overlay)
-  requestAnimationFrame(() => overlay.classList.add('open'))
-  document.body.style.overflow = 'hidden'
+  if (isNewModal) {
+    overlay.addEventListener('click', e => { if (e.target === overlay) fecharModal() })
+    document.body.appendChild(overlay)
+    requestAnimationFrame(() => overlay.classList.add('open'))
+    document.body.style.overflow = 'hidden'
 
-  // Teclado
-  overlay._keyHandler = e => {
-    if (e.key === 'Escape') fecharModal()
-    if (e.key === 'ArrowRight') navModal(1)
-    if (e.key === 'ArrowLeft')  navModal(-1)
+    // Teclado
+    overlay._keyHandler = e => {
+      if (e.key === 'Escape') fecharModal()
+      if (e.key === 'ArrowRight') navModal(1)
+      if (e.key === 'ArrowLeft')  navModal(-1)
+    }
+    document.addEventListener('keydown', overlay._keyHandler)
+  } else {
+    // Scrolla modal para o topo ao recarregar um produto via related
+    const modalBox = overlay.querySelector('.modal-box')
+    if (modalBox) modalBox.scrollTop = 0
   }
-  document.addEventListener('keydown', overlay._keyHandler)
+
+  renderizarProdutosRelacionados(peca)
+}
+
+function renderizarProdutosRelacionados(produtoAtual) {
+  const container = document.getElementById('modalRelatedSection')
+  const grid = document.getElementById('modalRelatedGrid')
+  
+  if (!container || !grid) return
+
+  // Filtra mesma categoria, remove o atual e pega 4 aleatórios
+  const relacionados = todasPecas
+    .filter(p => p.id !== produtoAtual.id && p.categoria === produtoAtual.categoria && p.visivel !== false)
+    .sort(() => 0.5 - Math.random())
+    .slice(0, 4)
+
+  if (relacionados.length === 0) {
+    container.classList.add('hidden')
+    return
+  }
+
+  container.classList.remove('hidden')
+  grid.innerHTML = ''
+
+  relacionados.forEach(prod => {
+    const card = document.createElement('div')
+    card.className = 'related-mini-card'
+    
+    let imgUrl = fotoPublica(prod.foto_path)
+
+    card.innerHTML = `
+      <div class="related-img-wrap">
+        <img src="${imgUrl}" alt="${prod.nome}" loading="lazy" onerror="this.src='https://placehold.co/120'">
+      </div>
+      <div class="related-info">
+        <div class="related-name">${prod.nome}</div>
+        <div class="related-price">${formatarPreco(prod.preco)}</div>
+      </div>
+    `
+
+    card.onclick = (e) => {
+      e.stopPropagation()
+      abrirModal(prod.id) // Como temos o isNewModal false, só re-injetará os dados HTML e reseta scroll.
+    }
+
+    grid.appendChild(card)
+  })
 }
 
 function navModal(dir) {

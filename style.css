@@ -386,7 +386,7 @@ input, select, textarea { font-family: var(--font-body); font-size: 14px; outlin
 }
 .modal-thumb.active { border-color: var(--accent); }
 
-.modal-info { flex: 1; padding: 32px 28px; display: flex; flex-direction: column; }
+.modal-info { flex: 1; min-width: 0; padding: 32px 28px; display: flex; flex-direction: column; }
 .modal-badge { font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--accent); margin-bottom: 10px; }
 .modal-name { font-family: var(--font-display); font-size: 28px; font-weight: 400; line-height: 1.2; margin-bottom: 12px; }
 .modal-price { font-size: 22px; font-weight: 500; color: var(--accent); margin-bottom: 16px; }
@@ -817,4 +817,75 @@ input, select, textarea { font-family: var(--font-body); font-size: 14px; outlin
 }
 .dark-mode .login-box button:hover {
   background: var(--accent-light);
+}
+
+/* ── Cross-Selling no Modal ── */
+.modal-related-section {
+  margin-top: 24px;
+  width: 100%;
+  min-width: 0;
+}
+.modal-related-title {
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 400;
+  margin-bottom: 12px;
+  color: var(--dark);
+}
+.modal-related-grid {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none; /* Firefox */
+  padding-bottom: 8px; /* Espaço para shadow */
+}
+.modal-related-grid::-webkit-scrollbar {
+  display: none; /* Chrome/Safari */
+}
+.related-mini-card {
+  flex: 0 0 120px; /* Largura fixa do mini card */
+  scroll-snap-align: start;
+  border: 1px solid var(--gray-light);
+  border-radius: 8px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: var(--transition);
+  background: var(--white);
+}
+.related-mini-card:hover {
+  border-color: var(--accent-light);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow);
+}
+.related-img-wrap {
+  aspect-ratio: 1/1;
+  background: var(--gray-light);
+  overflow: hidden;
+}
+.related-img-wrap img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.related-info {
+  padding: 8px;
+}
+.related-name {
+  font-size: 11px;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-bottom: 4px;
+}
+.related-price {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--accent);
+}
+
+@media (max-width: 768px) {
+  .related-mini-card { flex: 0 0 100px; }
+  .modal-related-title { font-size: 16px; }
 }
