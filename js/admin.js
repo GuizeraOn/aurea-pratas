@@ -935,8 +935,11 @@ function renderOrdemCategorias() {
         }))
 
         try {
-          const { error } = await db.from('categorias').upsert(updates, { onConflict: 'id' })
-          if (error) throw error
+          const resultados = await Promise.all(
+            updates.map((item) => db.from('categorias').update({ ordem: item.ordem }).eq('id', item.id))
+          )
+          const erros = resultados.filter(r => r.error)
+          if (erros.length > 0) throw erros[0].error
 
           showToast('Ordem das categorias salva!', 'success')
           
@@ -1020,8 +1023,11 @@ function carregarOrdemPecas() {
         }))
 
         try {
-          const { error } = await db.from('pecas').upsert(updates, { onConflict: 'id' })
-          if (error) throw error
+          const resultados = await Promise.all(
+            updates.map((item) => db.from('pecas').update({ ordem: item.ordem }).eq('id', item.id))
+          )
+          const erros = resultados.filter(r => r.error)
+          if (erros.length > 0) throw erros[0].error
 
           showToast('Ordem das peças salva!', 'success')
           
