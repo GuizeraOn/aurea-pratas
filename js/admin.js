@@ -935,7 +935,7 @@ function renderOrdemCategorias() {
         }))
 
         try {
-          const { error } = await db.from('categorias').upsert(updates)
+          const { error } = await db.from('categorias').upsert(updates, { onConflict: 'id' })
           if (error) throw error
 
           showToast('Ordem das categorias salva!', 'success')
@@ -1020,7 +1020,7 @@ function carregarOrdemPecas() {
         }))
 
         try {
-          const { error } = await db.from('pecas').upsert(updates)
+          const { error } = await db.from('pecas').upsert(updates, { onConflict: 'id' })
           if (error) throw error
 
           showToast('Ordem das peças salva!', 'success')
