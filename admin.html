@@ -104,6 +104,34 @@
         </div>
       </section>
 
+      <!-- Ordem das Categorias -->
+      <section class="admin-section">
+        <div class="section-title">Ordem das Categorias</div>
+        <p style="font-size:13px; color:var(--gray-mid); margin-bottom:12px;">Arraste as categorias para reordenar como aparecem no catálogo.</p>
+        <div id="sortableCategorias" style="display:flex; flex-direction:column; gap:8px;">
+          <!-- Carregado via JS -->
+          <div style="padding:16px; text-align:center; color:#888;">Carregando categorias...</div>
+        </div>
+      </section>
+
+      <!-- Ordem das Peças -->
+      <section class="admin-section">
+        <div class="section-title">Ordem das Peças (por Categoria)</div>
+        <div class="form-row" style="margin-bottom:16px;">
+          <div class="form-group" style="width: 100%;">
+            <label>Filtrar por Categoria</label>
+            <select id="selectOrdemCategoria" onchange="carregarOrdemPecas()">
+              <option value="">Carregando...</option>
+            </select>
+          </div>
+        </div>
+        <p style="font-size:13px; color:var(--gray-mid); margin-bottom:12px; display:none;" id="ordemPecasDica">Arraste os cards para reordenar suas peças. As alterações são salvas automaticamente.</p>
+        <div id="sortablePecas" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(200px, 1fr)); gap:16px;">
+          <!-- Carregado via JS -->
+          <div style="padding:16px; text-align:center; color:#888; grid-column: 1 / -1;">Selecione uma categoria acima.</div>
+        </div>
+      </section>
+
       <!-- Formulário -->
       <section class="admin-section">
         <div class="section-title" id="formTitle">Cadastrar Nova Peça</div>
@@ -234,6 +262,7 @@
     <div class="toast" id="toast"></div>
   </div>
 
+  <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="js/config.js"></script>
   <script src="js/admin.js"></script>

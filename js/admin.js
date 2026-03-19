@@ -226,7 +226,7 @@ function removerFoto(idx) {
 // ── Dados Dynamicos (Categorias e Tipos) ──────────────────────
 async function carregarCategoriasETipos() {
   const [resCat, resTipos] = await Promise.all([
-    db.from('categorias').select('*').order('ordem'),
+    db.from('categorias').select('*').order('ordem', { ascending: true }),
     db.from('tipos_variacao').select('*').order('nome')
   ])
   if (!resCat.error) categorias = resCat.data || []
@@ -237,6 +237,8 @@ async function carregarCategoriasETipos() {
   atualizarFiltrosAdmin()
   preencherSelectCategoria()
   renderVariacoesSelector()
+  renderOrdemCategorias()
+  preencherFiltroOrdemPecas()
 
   const statCats = document.getElementById('statCats')
   if (statCats) statCats.textContent = categorias.length
@@ -403,11 +405,12 @@ function removerVariacaoValor(tipo_id, index) {
 // ── Carregar peças ────────────────────────────────────────────
 async function carregarPecasAdmin() {
   try {
-    const { data, error } = await db.from('pecas').select('*').order('created_at', { ascending: false })
+    const { data, error } = await db.from('pecas').select('*').order('ordem', { ascending: true })
     if (error) throw error
     todasPecasAdmin = data || []
     atualizarStats()
     renderTabela()
+    carregarOrdemPecas()
   } catch (err) {
     console.error(err)
     tableBody.innerHTML = `<tr><td colspan="7" style="text-align:center;color:var(--red);padding:40px">Erro ao carregar. Verifique sua conexão.</td></tr>`
@@ -895,4 +898,143 @@ function promptReporEstoque(id) {
      return
   }
   atualizarEstoqueBanco(id, num)
+}
+
+// ── Ordenação (Drag & Drop) ───────────────────────────────────
+
+let sortableCatInst = null
+let sortablePecasInst = null
+
+function renderOrdemCategorias() {
+  const container = document.getElementById('sortableCategorias')
+  if (!container) return
+  
+  if (categorias.length === 0) {
+    container.innerHTML = `<div style="padding:16px; text-align:center; color:#888;">Nenhuma categoria encontrada.</div>`
+    return
+  }
+
+  container.innerHTML = categorias.map(c => `
+    <div class="sortable-item" data-id="${c.id}" style="display:flex; align-items:center; background:var(--white); padding:12px 16px; border:1px solid var(--gray-light); border-radius:8px; cursor:grab;">
+      <span style="color:var(--gray-mid); margin-right:12px; font-size:18px; cursor:grab;">⠿</span>
+      <span style="font-weight:500; color:var(--dark);">${c.nome}</span>
+    </div>
+  `).join('')
+
+  if (sortableCatInst) sortableCatInst.destroy()
+  
+  if (typeof Sortable !== 'undefined') {
+    sortableCatInst = new Sortable(container, {
+      animation: 150,
+      ghostClass: 'sortable-ghost',
+      onEnd: async function () {
+        const items = container.querySelectorAll('.sortable-item')
+        const updates = Array.from(items).map((el, index) => ({
+          id: el.dataset.id,
+          ordem: index
+        }))
+
+        try {
+          const { error } = await db.from('categorias').upsert(updates)
+          if (error) throw error
+
+          showToast('Ordem das categorias salva!', 'success')
+          
+          categorias = categorias.sort((a,b) => {
+             let valA = updates.find(u=>u.id===a.id)?.ordem ?? a.ordem
+             let valB = updates.find(u=>u.id===b.id)?.ordem ?? b.ordem
+             return valA - valB
+          })
+          categorias.forEach(c => { c.ordem = updates.find(u=>u.id===c.id)?.ordem ?? c.ordem })
+          atualizarFiltrosAdmin()
+          preencherSelectCategoria()
+        } catch (err) {
+          console.error(err)
+          showToast('Erro ao salvar ordem das categorias.', 'error')
+        }
+      }
+    })
+  }
+}
+
+function preencherFiltroOrdemPecas() {
+  const select = document.getElementById('selectOrdemCategoria')
+  if (!select) return
+  const currentVal = select.value
+  select.innerHTML = '<option value="">Selecione uma categoria...</option>' + categorias.map(c => `<option value="${c.id}">${c.nome}</option>`).join('')
+  
+  if (categorias.find(c => c.id === currentVal)) {
+    select.value = currentVal
+  }
+}
+
+function carregarOrdemPecas() {
+  const container = document.getElementById('sortablePecas')
+  const dica = document.getElementById('ordemPecasDica')
+  const catId = document.getElementById('selectOrdemCategoria')?.value
+  
+  if (!container) return
+  
+  if (!catId) {
+    container.innerHTML = `<div style="padding:16px; text-align:center; color:#888; grid-column: 1 / -1;">Selecione uma categoria acima.</div>`
+    if (dica) dica.style.display = 'none'
+    return
+  }
+
+  // Pegamos apenas as peças visíveis para o painel de ordem? Não, no admin mostra todas
+  const pecasDaCat = todasPecasAdmin.filter(p => p.categoria === catId)
+  
+  if (pecasDaCat.length === 0) {
+    container.innerHTML = `<div style="padding:16px; text-align:center; color:#888; grid-column: 1 / -1;">Nenhuma peça nesta categoria.</div>`
+    if (dica) dica.style.display = 'none'
+    return
+  }
+
+  if (dica) dica.style.display = 'block'
+
+  container.innerHTML = pecasDaCat.map(peca => {
+    const foto = fotoPublicaAdmin(peca.foto_path)
+    return `
+      <div class="sortable-item" data-id="${peca.id}" style="display:flex; align-items:center; background:var(--white); padding:12px; border:1px solid var(--gray-light); border-radius:8px; cursor:grab; gap:12px;">
+        <span style="color:var(--gray-mid); font-size:18px; cursor:grab;">⠿</span>
+        <img src="${foto}" alt="${peca.nome}" style="width:40px; height:40px; object-fit:cover; border-radius:4px; flex-shrink:0;" onerror="this.src='https://placehold.co/40'">
+        <div style="flex:1; overflow:hidden;">
+          <div style="font-weight:500; color:var(--dark); font-size:13px; text-overflow:ellipsis; white-space:nowrap; overflow:hidden;">${peca.nome}</div>
+          <div style="color:var(--gray-mid); font-size:12px;">${formatarPreco(peca.preco)}</div>
+        </div>
+      </div>
+    `
+  }).join('')
+
+  if (sortablePecasInst) sortablePecasInst.destroy()
+
+  if (typeof Sortable !== 'undefined') {
+    sortablePecasInst = new Sortable(container, {
+      animation: 150,
+      ghostClass: 'sortable-ghost',
+      onEnd: async function () {
+        const items = container.querySelectorAll('.sortable-item')
+        const updates = Array.from(items).map((el, index) => ({
+          id: el.dataset.id,
+          ordem: index
+        }))
+
+        try {
+          const { error } = await db.from('pecas').upsert(updates)
+          if (error) throw error
+
+          showToast('Ordem das peças salva!', 'success')
+          
+          pecasDaCat.forEach(p => { p.ordem = updates.find(u => u.id === p.id)?.ordem ?? p.ordem })
+          todasPecasAdmin.forEach(p => { if (p.categoria === catId) p.ordem = pecasDaCat.find(pc => pc.id === p.id)?.ordem ?? p.ordem })
+          todasPecasAdmin.sort((a,b) => (a.ordem || 0) - (b.ordem || 0))
+          
+          renderTabela()
+        } catch (err) {
+          console.error(err)
+          showToast('Erro ao salvar ordem das peças.', 'error')
+        }
+      }
+    })
+  }
 }

@@ -69,8 +69,8 @@ async function carregarPecas() {
   renderSkeletons()
   try {
     const [resPecas, resCat, resTipos] = await Promise.all([
-      db.from('pecas').select('*').eq('visivel', true).or('estoque.gt.0,estoque.is.null').order('created_at', { ascending: false }),
-      db.from('categorias').select('*').order('ordem'),
+      db.from('pecas').select('*').eq('visivel', true).or('estoque.gt.0,estoque.is.null').order('ordem', { ascending: true }),
+      db.from('categorias').select('*').order('ordem', { ascending: true }),
       db.from('tipos_variacao').select('*').order('nome')
     ])
     if (resPecas.error) throw resPecas.error
@@ -142,8 +142,9 @@ function renderGrid() {
     if (sortVal === 'menor-preco') return a.preco - b.preco
     if (sortVal === 'maior-preco') return b.preco - a.preco
     if (sortVal === 'vendidos') return (b.vendas || 0) - (a.vendas || 0)
-    // Padrão: Mais recentes (created_at desc)
-    return new Date(b.created_at) - new Date(a.created_at)
+    if (sortVal === 'recentes') return new Date(b.created_at) - new Date(a.created_at)
+    // Padrão: Ordem manual
+    return (a.ordem || 0) - (b.ordem || 0)
   })
 
   if (filtradas.length === 0) {
@@ -171,7 +172,7 @@ function limparFiltros() {
   catAtiva = 'todos'
   buscaAtiva = ''
   document.getElementById('searchInput').value = ''
-  document.getElementById('sortSelect').value = 'recentes'
+  document.getElementById('sortSelect').value = 'ordem'
   document.querySelectorAll('#filtersContainer .filter-btn').forEach(btn => {
     btn.classList.toggle('active', btn.dataset.cat === 'todos')
   })
