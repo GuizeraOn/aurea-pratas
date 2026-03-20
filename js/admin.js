@@ -157,41 +157,66 @@ async function selecionarFoto(idx, file) {
   }
 }
 
-function comprimirParaWebP(file, qualidade = 0.8) {
+async function comprimirParaWebP(file, qualidadeInicial = 0.75) {
   return new Promise((resolve, reject) => {
     if (!file.type.startsWith('image/')) return resolve(file)
 
     const img = new Image()
     img.src = URL.createObjectURL(file)
+
     img.onload = () => {
       URL.revokeObjectURL(img.src)
-      const canvas = document.createElement('canvas')
-      const ctx = canvas.getContext('2d')
-      
-      // Limite dimensionado para ótima leitura mas controle de tamanho
-      const MAX_WIDTH = 1200
-      const MAX_HEIGHT = 1200
-      let width = img.width
-      let height = img.height
-      
-      if (width > height) {
-        if (width > MAX_WIDTH) { height *= MAX_WIDTH / width; width = MAX_WIDTH }
+
+      // ── 1. Redimensionamento: máx 900px no lado maior (suficiente para joias)
+      const MAX = 900
+      let w = img.width
+      let h = img.height
+
+      if (w > h) {
+        if (w > MAX) { h = Math.round(h * MAX / w); w = MAX }
       } else {
-        if (height > MAX_HEIGHT) { width *= MAX_HEIGHT / height; height = MAX_HEIGHT }
+        if (h > MAX) { w = Math.round(w * MAX / h); h = MAX }
       }
-      
-      canvas.width = width
-      canvas.height = height
-      ctx.drawImage(img, 0, 0, width, height)
-      
-      canvas.toBlob(blob => {
-        if (!blob) return reject('Erro ao converter no canvas')
-        // Substitui a extensão por .webp
-        const base = file.name.substring(0, file.name.lastIndexOf('.')) || file.name
-        resolve(new File([blob], `${base}.webp`, { type: 'image/webp' }))
-      }, 'image/webp', qualidade)
+
+      const canvas = document.createElement('canvas')
+      canvas.width  = w
+      canvas.height = h
+      const ctx = canvas.getContext('2d')
+      ctx.drawImage(img, 0, 0, w, h)
+
+      // ── 2. Compressão adaptativa: tenta reduzir até caber em 300KB
+      const LIMITE_BYTES = 300 * 1024   // 300 KB
+      const qualidades   = [qualidadeInicial, 0.65, 0.55, 0.45]
+      const base         = file.name.replace(/\.[^.]+$/, '') || 'foto'
+
+      let tentativa = 0
+
+      function tentar() {
+        if (tentativa >= qualidades.length) {
+          // Último recurso: resolve com a menor qualidade mesmo assim
+          canvas.toBlob(blob => {
+            if (!blob) return reject('Erro no canvas')
+            resolve(new File([blob], `${base}.webp`, { type: 'image/webp' }))
+          }, 'image/webp', qualidades[qualidades.length - 1])
+          return
+        }
+
+        canvas.toBlob(blob => {
+          if (!blob) return reject('Erro no canvas')
+
+          if (blob.size <= LIMITE_BYTES || tentativa === qualidades.length - 1) {
+            resolve(new File([blob], `${base}.webp`, { type: 'image/webp' }))
+          } else {
+            tentativa++
+            tentar()  // tenta qualidade menor
+          }
+        }, 'image/webp', qualidades[tentativa])
+      }
+
+      tentar()
     }
-    img.onerror = () => reject('Falha ao carregar a imagem original')
+
+    img.onerror = () => reject('Falha ao carregar imagem original')
   })
 }
 
