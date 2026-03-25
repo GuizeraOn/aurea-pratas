@@ -313,7 +313,13 @@ input, select, textarea { font-family: var(--font-body); font-size: 14px; outlin
 
 .card-info { padding: 16px 16px 18px; }
 .card-name { font-family: var(--font-display); font-size: 17px; font-weight: 400; margin-bottom: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.card-price { font-size: 15px; font-weight: 500; color: var(--accent); }
+.card-price { font-size: 15px; font-weight: 500; color: var(--accent); display: flex; flex-direction: column; justify-content: flex-end; }
+
+/* ── Preços Component ── */
+.preco-wrapper { display: flex; flex-direction: column; gap: 2px; align-items: flex-start; }
+.preco-original { text-decoration: line-through; color: var(--gray-mid); font-size: 0.82em; line-height: 1.1; font-weight: 400; transform: translateY(2px); }
+.preco-promocional { color: var(--accent); font-size: 1.05em; font-weight: 700; line-height: 1.1; }
+.preco-normal { color: inherit; font-size: 1em; font-weight: inherit; }
 
 .empty-state {
   grid-column: 1/-1; text-align: center; padding: 80px 24px; color: var(--gray-mid);

@@ -474,12 +474,17 @@ function renderTabela() {
         : `${peca.estoque} un.`)
       : '<span style="color:#bbb">—</span>'
 
+    const precoCell = peca.preco_promocional
+      ? `<span style="text-decoration:line-through;color:#aaa;font-size:12px">${formatarPreco(peca.preco)}</span>
+         <br><strong style="color:var(--accent)">${formatarPreco(peca.preco_promocional)}</strong>`
+      : formatarPreco(peca.preco);
+
     return `
       <tr>
         <td><img class="product-thumb" src="${foto}" alt="${peca.nome}" onerror="this.src='https://placehold.co/44x44/e8e8e4/888?text=?'" /></td>
         <td class="product-name-cell">${peca.nome}</td>
         <td>${catLabel}</td>
-        <td class="price-cell">${formatarPreco(peca.preco)}</td>
+        <td class="price-cell" style="line-height:1.2;">${precoCell}</td>
         <td>${estoque}</td>
         <td><button class="toggle-btn ${statusCls}" onclick="toggleVisivel('${peca.id}',${peca.visivel})">${statusTxt}</button></td>
         <td>
@@ -503,6 +508,7 @@ async function salvarPeca() {
     nome: document.getElementById('inputNome'),
     categoria: document.getElementById('inputCategoria'),
     preco: document.getElementById('inputPreco'),
+    precoPromo: document.getElementById('inputPrecoPromo'),
     estoque: document.getElementById('inputEstoque'),
     desc: document.getElementById('inputDesc'),
     url: [
@@ -516,6 +522,7 @@ async function salvarPeca() {
   const nome      = inputs.nome.value.trim()
   const categoria = inputs.categoria.value
   const preco     = parseFloat(inputs.preco.value)
+  const preco_promocional = parseFloat(inputs.precoPromo.value) || null
   const estoqueVal= inputs.estoque.value
   const descricao = inputs.desc.value.trim()
   const fotoUrls  = inputs.url.map(inp => inp.value.trim())
@@ -526,6 +533,12 @@ async function salvarPeca() {
   if (!categoria) { inputs.categoria.classList.add('input-error'); return showToast('Selecione uma categoria.', 'error') }
   if (isNaN(preco) || preco <= 0) { inputs.preco.classList.add('input-error'); return showToast('Informe um preço válido.', 'error') }
   
+  if (preco_promocional && preco_promocional >= preco) {
+    inputs.precoPromo.classList.add('input-error');
+    showToast('Preço promocional deve ser menor que o original.', 'error');
+    return;
+  }
+
   if (!editingId && !fotosArquivos[0] && !fotoUrls[0]) {
      return showToast('Adicione a foto principal ou uma URL.', 'error')
   }
@@ -561,7 +574,7 @@ async function salvarPeca() {
     })
 
     const payload = {
-      nome, categoria, preco, descricao, estoque,
+      nome, categoria, preco, preco_promocional, descricao, estoque,
       foto_path: paths[0] || null,
       foto_2:    paths[1] || null,
       foto_3:    paths[2] || null,
@@ -612,6 +625,7 @@ async function editarPeca(id) {
   document.getElementById('inputNome').value      = p.nome
   document.getElementById('inputCategoria').value = p.categoria
   document.getElementById('inputPreco').value     = p.preco
+  document.getElementById('inputPrecoPromo').value= p.preco_promocional ?? ''
   document.getElementById('inputEstoque').value   = p.estoque ?? ''
   
   const formGroupEstoque = document.getElementById('inputEstoque').parentElement
@@ -672,7 +686,7 @@ async function editarPeca(id) {
 function cancelarEdicao() { limparFormulario() }
 
 function limparFormulario() {
-  ['inputNome','inputCategoria','inputPreco','inputEstoque','inputDesc','editingId'].forEach(id => {
+  ['inputNome','inputCategoria','inputPreco','inputPrecoPromo','inputEstoque','inputDesc','editingId'].forEach(id => {
     document.getElementById(id).value = ''
   })
   fotosArquivos   = [null, null, null, null]

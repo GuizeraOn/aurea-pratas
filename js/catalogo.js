@@ -139,8 +139,8 @@ function renderGrid() {
 
   const sortVal = document.getElementById('sortSelect').value
   filtradas.sort((a, b) => {
-    if (sortVal === 'menor-preco') return a.preco - b.preco
-    if (sortVal === 'maior-preco') return b.preco - a.preco
+    if (sortVal === 'menor-preco') return precoEfetivo(a) - precoEfetivo(b)
+    if (sortVal === 'maior-preco') return precoEfetivo(b) - precoEfetivo(a)
     if (sortVal === 'vendidos') return (b.vendas || 0) - (a.vendas || 0)
     if (sortVal === 'recentes') return new Date(b.created_at) - new Date(a.created_at)
     // Padrão: Ordem manual
@@ -226,7 +226,7 @@ function cardHTML(peca) {
           ${isNova ? '<span class="badge-new">Novo</span>' : ''}
         </div>
         <div class="card-name" onclick="abrirModal('${peca.id}')">${peca.nome}</div>
-        <div class="card-price" onclick="abrirModal('${peca.id}')">${formatarPreco(peca.preco)}</div>
+        <div class="card-price" onclick="abrirModal('${peca.id}')">${renderPreco(peca)}</div>
         <div class="card-status-wrap">
           ${statusHTML}
         </div>
@@ -330,7 +330,7 @@ function abrirModal(id) {
         <div class="modal-info">
           <div class="modal-badge">${catLabel}</div>
           <div class="modal-name">${peca.nome}</div>
-          <div class="modal-price">${formatarPreco(peca.preco)}</div>
+          <div class="modal-price">${renderPreco(peca)}</div>
           <div class="modal-divider"></div>
           <div class="modal-desc">${peca.descricao || 'Peça em prata, acabamento polido de alta qualidade.'}</div>
           ${estoqueHTML}
@@ -407,7 +407,7 @@ function renderizarProdutosRelacionados(produtoAtual) {
       </div>
       <div class="related-info">
         <div class="related-name">${prod.nome}</div>
-        <div class="related-price">${formatarPreco(prod.preco)}</div>
+        <div class="related-price">${renderPreco(prod)}</div>
       </div>
     `
 
@@ -528,7 +528,7 @@ function alterarQuantidade(carrinhoChave, delta) {
 
 function atualizarContadorCarrinho() {
   const n = carrinho.reduce((s, c) => s + c.quantidade, 0)
-  const total = carrinho.reduce((s, p) => s + p.preco * p.quantidade, 0)
+  const total = carrinho.reduce((s, p) => s + precoEfetivo(p) * p.quantidade, 0)
   
   cartCountEl.textContent = n
   cartCountEl.classList.toggle('hidden', n === 0)
@@ -566,7 +566,7 @@ function renderCarrinho() {
       <div class="cart-item-info">
         <div class="cart-item-name">${peca.nome}</div>
         ${peca.variacoesLabel ? `<div style="font-size:11px;color:var(--gray-dark);margin-top:2px;font-weight:600">${peca.variacoesLabel}</div>` : ''}
-        <div class="cart-item-price">${formatarPreco(peca.preco)} × ${peca.quantidade} = ${formatarPreco(peca.preco * peca.quantidade)}</div>
+        <div class="cart-item-price">${formatarPreco(precoEfetivo(peca))} × ${peca.quantidade} = ${formatarPreco(precoEfetivo(peca) * peca.quantidade)}</div>
         <div class="cart-item-qty">
           <button class="qty-btn" onclick="alterarQuantidade('${peca.carrinhoChave}',-1)">−</button>
           <span class="qty-value">${peca.quantidade}</span>
@@ -578,7 +578,7 @@ function renderCarrinho() {
       </button>
     </div>`).join('')
 
-  const total = carrinho.reduce((s, p) => s + p.preco * p.quantidade, 0)
+  const total = carrinho.reduce((s, p) => s + precoEfetivo(p) * p.quantidade, 0)
   cartTotalEl.textContent  = formatarPreco(total)
   cartFooterEl.style.display = 'block'
   atualizarContadorCarrinho()
@@ -612,12 +612,12 @@ function finalizarWhatsapp() {
   const linhas = carrinho.map(p => {
     const label = p.variacoesLabel ? ` (${p.variacoesLabel})` : ''
     const itemInfo = p.quantidade > 1 
-      ? `${p.nome}${label} × ${p.quantidade} — ${formatarPreco(p.preco * p.quantidade)}`
-      : `${p.nome}${label} — ${formatarPreco(p.preco)}`
+      ? `${p.nome}${label} × ${p.quantidade} — ${formatarPreco(precoEfetivo(p) * p.quantidade)}`
+      : `${p.nome}${label} — ${formatarPreco(precoEfetivo(p))}`
     return `- ${itemInfo}`
   })
 
-  const total = carrinho.reduce((s, p) => s + p.preco * p.quantidade, 0)
+  const total = carrinho.reduce((s, p) => s + precoEfetivo(p) * p.quantidade, 0)
   
   const msg = [
     'Olá! Gostaria de saber mais sobre as peças abaixo:',
@@ -653,6 +653,22 @@ function registrarEvento(pecaId, acao) {
 }
 
 // ── Helpers ───────────────────────────────────────────────────
+function precoEfetivo(peca) {
+  return peca.preco_promocional ?? peca.preco;
+}
+
+function renderPreco(peca) {
+  if (peca.preco_promocional) {
+    return `<div class="preco-wrapper">
+        <span class="preco-original">${formatarPreco(peca.preco)}</span>
+        <span class="preco-promocional">${formatarPreco(peca.preco_promocional)}</span>
+      </div>`;
+  }
+  return `<div class="preco-wrapper">
+            <span class="preco-normal">${formatarPreco(peca.preco)}</span>
+          </div>`;
+}
+
 function fotoPublica(path) {
   if (!path) return 'https://placehold.co/400x400/e8e8e4/888?text=Foto'
   if (path.startsWith('http')) return path
